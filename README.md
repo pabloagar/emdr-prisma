@@ -5,7 +5,7 @@ Implementación inicial de dos vistas (profesional y paciente) para estimulació
 ## Qué incluye
 
 - Motor visual original con vista de paciente (`?role=patient`).
-- Crear una sala privada de 2 horas, enlace temporal y roles exclusivos (1 profesional + 1 paciente).
+- Crear una sala de demostración de 2 horas, enlace temporal y roles exclusivos (1 profesional + 1 paciente).
 - WebSocket por sala con Cloudflare Durable Objects y estado persistido.
 - Configuración de trayectoria, estímulo, frecuencia, tamaño, paleta, fondo y audio desde los controles del profesional.
 - Iniciar, pausar y detener estímulos a distancia; el paciente siempre puede detenerlos localmente.
@@ -18,19 +18,15 @@ Requiere Node.js 20+, cuenta Cloudflare, `npm` y Wrangler. Para simplificar, est
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars
-# Editar .dev.vars con dos valores aleatorios diferentes y largos.
 npm run dev
 ```
 
-Generar cada secreto con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Usar los dos valores distintos en `CREATE_ROOM_SECRET` e `INTERNAL_ROOM_KEY`.
+Esta versión de demostración no requiere variables secretas. Las invitaciones se generan con tokens aleatorios de capacidad por sala. **No es apropiada para uso clínico o publicación abierta permanente**: cualquiera que conozca la web puede crear salas y consumir recursos.
 
 En producción:
 
 ```bash
 npx wrangler login
-npx wrangler secret put CREATE_ROOM_SECRET
-npx wrangler secret put INTERNAL_ROOM_KEY
 npm run deploy
 ```
 
@@ -39,7 +35,7 @@ El despliegue entrega una URL bajo `workers.dev` si está habilitada para el Wor
 ## Uso
 
 1. Abre la URL del Worker sin parámetros: panel del profesional.
-2. Pulsa **Crear sala segura**; introduce `CREATE_ROOM_SECRET` (no se almacena en el navegador).
+2. Pulsa **Crear sala segura**. No se pide contraseña; el servidor genera invitaciones temporales.
 3. Pulsa **Copiar enlace paciente**. El enlace lleva un token de invitación en su fragmento y dura como máximo 2 horas. **Trátalo como una contraseña**.
 4. El paciente abre el enlace en otro navegador/dispositivo, acepta la activación de audio y espera.
 5. Cuando aparezca **Ambos conectados**, el profesional utiliza los controles actuales de EMDR Prisma.
@@ -47,8 +43,11 @@ El despliegue entrega una URL bajo `workers.dev` si está habilitada para el Wor
 
 ## Seguridad y límites actuales
 
+**MODO DEMO SIN AUTENTICACIÓN:** Cualquier persona que conozca el sitio puede crear una sala. Utilizar solo con datos ficticios y pruebas controladas. No divulgar el enlace públicamente ni utilizar con pacientes reales. Antes de producción añadir autenticación, cuotas y protección antiabuso.
+
+
 - Los permisos se comprueban en el servidor: el paciente no puede modificar parámetros ni iniciar ejercicios.
-- Acceso profesional: **clave compartida para crear salas y token de capacidad de sala**, no login individual. Antes de uso clínico comercial, integrar autenticación por profesional, autorización robusta, auditoría, revocación y administración de invitaciones.
+- Acceso profesional: **token de capacidad de sala**, sin login individual ni restricción de creación de salas. Antes de uso clínico comercial, integrar autenticación por profesional, autorización robusta, auditoría, revocación y administración de invitaciones.
 - El código del enlace se consume desde el fragmento y se guarda en `sessionStorage`; se retira de la barra del navegador. Sin embargo, el token también se envía por la conexión WebSocket y podría aparecer en registros de infraestructura. Proteger registros y no compartir enlaces públicamente.
 - La sincronización de comandos es **aproximada** por latencia de red. No existe todavía calibración precisa de relojes ni audio-visión sincronizados por marcas temporales. Las dos animaciones se ejecutan localmente y pueden tener desfase. **No está validado el ritmo real, el audio ni su sincronía clínica.**
 - Los navegadores requieren interacción del paciente para reproducir audio. La activación del sonido es local.
