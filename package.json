@@ -1,8 +1,30 @@
 {
-  "name":"emdr-prisma-realtime",
-  "version":"0.1.0",
-  "private":true,
-  "type":"module",
-  "scripts":{"dev":"wrangler dev","deploy":"wrangler deploy","test":"node --test test/*.test.mjs","check":"node --check src/worker.js && node --check public/realtime.js && node --check src/validation.mjs"},
-  "devDependencies":{"wrangler":"^4.0.0"}
+  "name": "emdr-prisma-realtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "start": "NODE_ENV=production tsx server.ts"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.2.1",
+    "tailwindcss": "^4.3.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "ws": "^8.22.1"
+  }
 }
