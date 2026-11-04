@@ -66,7 +66,7 @@ Antes de publicar: `npm run check`, `npm test` y `npx wrangler deploy --dry-run`
 
 ## Pruebas efectuadas
 
-`npm test` comprueba validación de parámetros y rechazo de mensajes excesivos. `npm run check` comprueba sintaxis JS. **No se ha ejecutado aún una prueba end-to-end contra Durable Objects desplegado, ni una prueba clínica.**
+`npm test` comprueba validación de parámetros y rechazo de mensajes excesivos. `npm run check` comprueba sintaxis JS. `node scripts/smoke.mjs URL` verifica HTTP, creación de sala, conexión de ambos roles, permisos del paciente, configuración, inicio/pausa, parada del paciente y pausa al desconectar el profesional. Crea una sala ficticia temporal de 2 horas; no imprime credenciales y no reproduce estímulos en un navegador. Las pruebas locales y los resultados del despliegue se registran en `EXPERIMENTS.md`. No es una prueba clínica ni mide sincronización audiovisual.
 
 ## Arquitectura
 
