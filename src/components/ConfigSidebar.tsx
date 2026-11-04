@@ -323,25 +323,26 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                   </div>
                 </div>
 
-                {/* Estímulos Cinéticos Especiales */}
+                {/* Estímulos Cinéticos Especiales: 3 modos (sin láser) */}
                 <div className="flex flex-col gap-2 pt-2 border-t border-[#DCE3DC]/60">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
-                      Estímulos Cinéticos Especiales
+                      3 Estímulos Cinéticos
                     </label>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
-                      Láser, Barras y Bordes
+                      Física Especial
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
+                      type="button"
                       aria-pressed={settings.stimulus === 'led-bar'}
                       onClick={() => onUpdateSettings({ stimulus: 'led-bar' })}
                       className="stim-card"
                     >
-                      <div className="h-5 flex items-center justify-center mb-1">
-                        <svg fill="none" height="12" viewBox="0 0 68 12" width="58">
+                      <div className="h-5 flex items-center justify-center mb-0.5">
+                        <svg fill="none" height="10" viewBox="0 0 68 12" width="50">
                           <circle cx="6" cy="6" fill="#BCC5BD" r="2" />
                           <circle cx="16" cy="6" fill="#BCC5BD" r="2" />
                           <circle cx="26" cy="6" fill="#BCC5BD" r="2" />
@@ -350,54 +351,41 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                           <circle cx="52" cy="6" fill="#BCC5BD" r="2" />
                         </svg>
                       </div>
-                      <span className="stim-title text-xs font-semibold text-[#17231D]">Barra LED</span>
-                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Traslación continua</span>
+                      <span className="stim-title text-[11px] font-semibold text-[#17231D] leading-tight">Barra LED</span>
+                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Continua</span>
                     </button>
 
                     <button
+                      type="button"
                       aria-pressed={settings.stimulus === 'sweep'}
                       onClick={() => onUpdateSettings({ stimulus: 'sweep' })}
                       className="stim-card"
                     >
-                      <div className="h-5 flex items-center justify-center mb-1">
-                        <svg fill="none" height="18" viewBox="0 0 40 18" width="36">
+                      <div className="h-5 flex items-center justify-center mb-0.5">
+                        <svg fill="none" height="16" viewBox="0 0 40 18" width="30">
                           <line stroke="#BCC5BD" strokeDasharray="2 2" strokeWidth="1.5" x1="8" x2="14" y1="9" y2="9" />
                           <line stroke={currentStimulusColor} strokeLinecap="round" strokeWidth="2.2" x1="20" x2="20" y1="2" y2="16" />
                           <line stroke="#BCC5BD" strokeDasharray="2 2" strokeWidth="1.5" x1="26" x2="32" y1="9" y2="9" />
                         </svg>
                       </div>
-                      <span className="stim-title text-xs font-semibold text-[#17231D]">Línea de barrido</span>
-                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Velocidad lineal</span>
+                      <span className="stim-title text-[11px] font-semibold text-[#17231D] leading-tight">Barrido</span>
+                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Lineal</span>
                     </button>
 
                     <button
-                      aria-pressed={settings.stimulus === 'laser'}
-                      onClick={() => onUpdateSettings({ stimulus: 'laser' })}
-                      className="stim-card"
-                    >
-                      <div className="h-5 flex items-center justify-center mb-1">
-                        <svg fill="none" height="18" viewBox="0 0 40 18" width="36">
-                          <line stroke={currentStimulusColor} strokeLinecap="round" strokeWidth="2" x1="12" x2="26" y1="16" y2="4" />
-                          <circle cx="27" cy="4" fill={currentStimulusColor} r="2.5" />
-                        </svg>
-                      </div>
-                      <span className="stim-title text-xs font-semibold text-[#17231D]">Haz láser</span>
-                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Haz focal continuo</span>
-                    </button>
-
-                    <button
+                      type="button"
                       aria-pressed={settings.stimulus === 'edges'}
                       onClick={() => onUpdateSettings({ stimulus: 'edges' })}
                       className="stim-card"
                     >
-                      <div className="h-5 flex items-center justify-center mb-1">
-                        <svg fill="none" height="18" viewBox="0 0 44 18" width="38">
+                      <div className="h-5 flex items-center justify-center mb-0.5">
+                        <svg fill="none" height="16" viewBox="0 0 44 18" width="32">
                           <path d="M14 3C10 3 7 6 7 9C7 12 10 15 14 15V3Z" fill={currentStimulusColor} />
                           <path d="M30 3C34 3 37 6 37 9C37 12 34 15 30 15V3Z" fill="#D3DDD5" />
                         </svg>
                       </div>
-                      <span className="stim-title text-xs font-semibold text-[#17231D]">Luces de borde</span>
-                      <span className="text-[9px] text-emerald-700 font-mono mt-0.5 font-semibold">Alternancia binaria</span>
+                      <span className="stim-title text-[11px] font-semibold text-[#17231D] leading-tight">Luces Borde</span>
+                      <span className="text-[9px] text-emerald-700 font-mono mt-0.5 font-semibold">Binaria L/R</span>
                     </button>
                   </div>
                 </div>
@@ -544,48 +532,49 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
               {(Object.keys(TRAJECTORIES) as TrajectoryType[]).map((tKey) => {
                 const def = TRAJECTORIES[tKey];
                 const isSel = settings.trajectory === tKey;
                 return (
                   <button
                     key={tKey}
+                    type="button"
                     aria-pressed={isSel}
                     onClick={() => onUpdateSettings({ trajectory: tKey })}
                     className="traj-card"
                   >
-                    <div className="h-6 flex items-center justify-center mb-1">
+                    <div className="h-5 flex items-center justify-center mb-0.5">
                       {tKey === 'horizontal' && (
-                        <svg fill="none" height="12" viewBox="0 0 44 12" width="44">
+                        <svg fill="none" height="10" viewBox="0 0 44 12" width="38">
                           <line stroke="#2D3B32" strokeWidth="2" x1="6" x2="38" y1="6" y2="6" />
                           <circle cx="6" cy="6" fill="#2D3B32" r="2.5" />
                           <circle cx="38" cy="6" fill="#2D3B32" r="2.5" />
                         </svg>
                       )}
                       {tKey === 'vertical' && (
-                        <svg fill="none" height="24" viewBox="0 0 20 24" width="20">
+                        <svg fill="none" height="18" viewBox="0 0 20 24" width="16">
                           <line stroke="#2D3B32" strokeWidth="2" x1="10" x2="10" y1="4" y2="20" />
                           <circle cx="10" cy="4" fill="#2D3B32" r="2.5" />
                           <circle cx="10" cy="20" fill="#2D3B32" r="2.5" />
                         </svg>
                       )}
                       {tKey === 'diagonal' && (
-                        <svg fill="none" height="22" viewBox="0 0 38 22" width="38">
+                        <svg fill="none" height="18" viewBox="0 0 38 22" width="30">
                           <line stroke="#2D3B32" strokeWidth="2" x1="6" x2="32" y1="17" y2="5" />
                           <circle cx="6" cy="17" fill="#2D3B32" r="2.5" />
                           <circle cx="32" cy="5" fill="#2D3B32" r="2.5" />
                         </svg>
                       )}
                       {tKey === 'alternate' && (
-                        <svg fill="none" height="12" viewBox="0 0 44 12" width="44">
+                        <svg fill="none" height="10" viewBox="0 0 44 12" width="38">
                           <circle cx="6" cy="6" fill="#2D3B32" r="3" />
                           <line stroke="#2D3B32" strokeDasharray="3 3" strokeWidth="1.8" x1="13" x2="31" y1="6" y2="6" />
                           <circle cx="38" cy="6" fill="none" r="3" stroke="#2D3B32" strokeWidth="1.8" />
                         </svg>
                       )}
                       {tKey === 'infinity' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                        <svg fill="none" height="16" viewBox="0 0 40 20" width="32">
                           <path
                             d="M10 5C6 5 4 7.5 4 10C4 12.5 6 15 10 15C15 15 18 10 20 10C22 10 25 15 30 15C34 15 36 12.5 36 10C36 7.5 34 5 30 5C25 5 22 10 20 10C18 10 15 5 10 5Z"
                             stroke="#2D3B32"
@@ -595,26 +584,26 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                         </svg>
                       )}
                       {tKey === 'circular' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                        <svg fill="none" height="16" viewBox="0 0 40 20" width="32">
                           <ellipse cx="20" cy="10" rx="14" ry="7" stroke="#2D3B32" strokeWidth="2" />
                         </svg>
                       )}
                       {tKey === 'pendulum' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                        <svg fill="none" height="16" viewBox="0 0 40 20" width="32">
                           <path d="M6 8C12 16 28 16 34 8" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
                           <circle cx="6" cy="8" fill="#2D3B32" r="2.5" />
                           <circle cx="34" cy="8" fill="#2D3B32" r="2.5" />
                         </svg>
                       )}
                       {tKey === 'arc' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                        <svg fill="none" height="16" viewBox="0 0 40 20" width="32">
                           <path d="M6 14C12 6 28 6 34 14" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
                           <circle cx="6" cy="14" fill="#2D3B32" r="2.5" />
                           <circle cx="34" cy="14" fill="#2D3B32" r="2.5" />
                         </svg>
                       )}
                       {tKey === 'zigzag' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                        <svg fill="none" height="16" viewBox="0 0 40 20" width="32">
                           <polyline
                             points="5,15 12,5 20,15 28,5 35,15"
                             stroke="#2D3B32"
@@ -625,18 +614,17 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                         </svg>
                       )}
                       {tKey === 'bounce' && (
-                        <svg fill="none" height="20" viewBox="0 0 42 20" width="42">
+                        <svg fill="none" height="16" viewBox="0 0 42 20" width="34">
                           <path d="M5 14C8 6 15 6 19 14C23 6 30 6 37 14" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
                         </svg>
                       )}
                       {tKey === 'smooth-random' && (
-                        <svg fill="none" height="20" viewBox="0 0 42 20" width="42">
+                        <svg fill="none" height="16" viewBox="0 0 42 20" width="34">
                           <path d="M6 13C10 13 12 7 17 8C22 9 24 5 29 7C34 9 34 5 36 6" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
                         </svg>
                       )}
                     </div>
-                    <span className="traj-title text-xs font-semibold text-[#17231D]">{def.name}</span>
-                    <span className="text-[10px] text-neutral-400 font-normal mt-0.5">{def.badge}</span>
+                    <span className="traj-title text-[11px] font-semibold text-[#17231D] leading-tight">{def.name}</span>
                   </button>
                 );
               })}
@@ -753,102 +741,95 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* PESTAÑA 4: PALETAS Y FONDOS                               */}
+        {/* PESTAÑA 4: PALETAS Y FONDOS (SIMPLES Y COMPACTAS)         */}
         {/* ========================================================= */}
         {currentTab === 'palettes' && (
-          <section className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono mb-1">
-                Paletas Oficiales de Bilateral
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                Paletas Clínicas
               </h3>
-              <p className="text-[11px] text-[#5B6960]">
-                Armonías de diseño clínico: Salvia, Bruma marina y Lino orgánico.
-              </p>
+              <span className="text-[10px] text-[#5B6960] font-mono">3 Armonías</span>
             </div>
 
-            {(['salvia', 'bruma', 'lino'] as PaletteKey[]).map((key) => {
-              const pal = PALETTES[key];
-              const isSel = settings.palette === key;
-              return (
-                <div
-                  key={key}
-                  onClick={() => onUpdateSettings({ palette: key, bg: pal.bg })}
-                  className={`palette-card p-3.5 rounded-xl border-2 transition-all flex flex-col gap-2.5 cursor-pointer ${
-                    isSel
-                      ? 'border-[#1B3B2B] bg-[#FBF9F5]'
-                      : 'border-[#DCE3DC] bg-white hover:border-[#1B3B2B]/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2">
+              {(['salvia', 'bruma', 'lino'] as PaletteKey[]).map((key) => {
+                const pal = PALETTES[key];
+                const isSel = settings.palette === key;
+                return (
+                  <div
+                    key={key}
+                    onClick={() => onUpdateSettings({ palette: key, bg: pal.bg })}
+                    className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                      isSel
+                        ? 'border-2 border-[#1B3B2B] bg-[#F1F5F2] shadow-2xs'
+                        : 'border-[#DCE3DC] bg-white hover:border-[#A3B5A8]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
                       <span
-                        className="w-3.5 h-3.5 rounded-full"
+                        className="w-3.5 h-3.5 rounded-full shrink-0"
                         style={{ backgroundColor: pal.primary }}
                       />
                       <span
-                        className={`font-display font-bold text-xs ${
+                        className={`font-display font-semibold text-xs truncate ${
                           isSel ? 'text-[#1B3B2B]' : 'text-[#17231D]'
                         }`}
                       >
-                        {pal.name}
+                        {pal.name.split('·')[1]?.trim() || pal.name}
                       </span>
                     </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className="w-4 h-4 rounded-full border border-black/10"
+                        style={{ backgroundColor: pal.bg }}
+                        title="Fondo"
+                      />
+                      <span
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: pal.primary }}
+                        title="Primario"
+                      />
+                      <span
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: pal.accent }}
+                        title="Acento"
+                      />
+                      <span
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: pal.subtle }}
+                        title="Suave"
+                      />
+                    </div>
+
                     <span
-                      className={`badge-status text-[9px] font-mono px-2 py-0.5 rounded font-semibold ${
+                      className={`text-[9px] font-mono px-2 py-0.5 rounded font-semibold shrink-0 ${
                         isSel ? 'bg-[#1B3B2B] text-white' : 'bg-[#EFF2EE] text-[#5B6960]'
                       }`}
                     >
                       {isSel ? 'ACTIVA' : 'APLICAR'}
                     </span>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-6 h-6 rounded-md border border-black/10"
-                      style={{ backgroundColor: pal.bg }}
-                      title={`Fondo: ${pal.bg}`}
-                    />
-                    <span
-                      className="w-6 h-6 rounded-md"
-                      style={{ backgroundColor: pal.primary }}
-                      title={`Primario: ${pal.primary}`}
-                    />
-                    <span
-                      className="w-6 h-6 rounded-md"
-                      style={{ backgroundColor: pal.accent }}
-                      title={`Acento: ${pal.accent}`}
-                    />
-                    <span
-                      className="w-6 h-6 rounded-md"
-                      style={{ backgroundColor: pal.subtle }}
-                      title={`Subtle: ${pal.subtle}`}
-                    />
-                    <span
-                      className="w-6 h-6 rounded-md"
-                      style={{ backgroundColor: pal.muted }}
-                      title={`Muted: ${pal.muted}`}
-                    />
-                  </div>
-
-                  <p className="text-[11px] text-[#5B6960] leading-relaxed">{pal.description}</p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             {/* Selector de fondo rápido */}
             <div className="flex flex-col gap-2 pt-2 border-t border-[#DCE3DC]/60">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#5B6960] font-mono">Tono de Fondo Rápido</span>
-                <span className="text-[11px] text-[#1B3B2B] font-medium font-mono">{settings.bg}</span>
+                <span className="text-[11px] font-semibold text-[#5B6960] font-mono">Fondo Rápido</span>
+                <span className="text-[10px] text-[#1B3B2B] font-mono">{settings.bg}</span>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {QUICK_BG_OPTIONS.map((opt) => (
                   <button
                     key={opt.bg}
+                    type="button"
                     onClick={() => onUpdateSettings({ bg: opt.bg })}
-                    className={`btn-quick-bg p-2 rounded-lg border text-center text-xs font-medium cursor-pointer transition-transform hover:scale-105 ${
+                    className={`py-1.5 px-1 rounded-lg border text-center text-[11px] font-medium cursor-pointer transition-transform hover:scale-102 ${
                       opt.textLight ? 'text-white' : 'text-[#17231D]'
-                    }`}
+                    } ${settings.bg === opt.bg ? 'ring-2 ring-[#1B3B2B]' : ''}`}
                     style={{ backgroundColor: opt.bg, borderColor: '#DCE3DC' }}
                   >
                     {opt.label}
@@ -860,68 +841,66 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* PESTAÑA 5: PLANTILLAS Y PERFILES                          */}
+        {/* PESTAÑA 5: PLANTILLAS (ORDEN: MODALIDAD -> AUDIO -> FIGURA -> MOVIMIENTO) */}
         {/* ========================================================= */}
         {currentTab === 'templates' && (
-          <section className="flex flex-col gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
-                  Plantillas Clínicas Preconfiguradas
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  EMDR Standard
-                </span>
-              </div>
-              <p className="text-[11px] text-[#5B6960]">
-                Protocolos clínicos optimizados para diferentes perfiles de paciente.
-              </p>
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                Plantillas Clínicas
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                Compactas
+              </span>
             </div>
 
-            <div className="flex flex-col gap-2.5">
+            {/* Helper de figura pequeña */}
+            <div className="flex flex-col gap-2">
               {Object.values(PRESET_TEMPLATES).map((tpl) => {
                 const isActive = activeTemplateId === tpl.id;
-                const pal = PALETTES[tpl.palette];
+                const pal = PALETTES[tpl.palette] || PALETTES.salvia;
+                const modLabel = tpl.modality === 'audio-only'
+                  ? 'Auditivo'
+                  : tpl.modality === 'visual-only'
+                  ? 'Visual'
+                  : 'Ambos';
+                const soundLabel = tpl.soundType === 'heartbeat'
+                  ? 'Latido'
+                  : tpl.soundType === 'tibetan'
+                  ? 'Cuenco'
+                  : tpl.soundType === 'water'
+                  ? 'Gota'
+                  : 'Click';
+
                 return (
                   <div
                     key={tpl.id}
-                    className={`p-3.5 rounded-xl border-2 transition-all flex flex-col gap-2.5 ${
+                    className={`p-2.5 rounded-xl border transition-all flex flex-col gap-2 ${
                       isActive
-                        ? 'border-[#1B3B2B] bg-[#FBF9F5] shadow-xs'
-                        : 'border-[#DCE3DC] bg-white hover:border-[#1B3B2B]/40'
+                        ? 'border-2 border-[#1B3B2B] bg-[#F1F5F2] shadow-2xs'
+                        : 'border-[#DCE3DC] bg-white hover:border-[#A3B5A8]'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: pal.primary }}
-                          />
-                          <span
-                            className={`font-display font-bold text-xs ${
-                              isActive ? 'text-[#1B3B2B]' : 'text-[#17231D]'
-                            }`}
-                          >
-                            {tpl.name}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#5B6960] mt-0.5 leading-relaxed">
-                          {tpl.id === 'trauma-agudo' &&
-                            'Suave atenuación somática. Ideal para estabilización y fases iniciales.'}
-                          {tpl.id === 'foco-nitido' &&
-                            'Láser continuo lineal para reactivar seguimiento visual en bloqueos.'}
-                          {tpl.id === 'hipersensibilidad' &&
-                            'Textura visual orgánica y bajo brillo. Adecuado para fotofobia.'}
-                          {tpl.id === 'alternancia-rapida' &&
-                            'Luces de borde con corte on/off binario para desensibilización contundente.'}
-                        </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: pal.primary }}
+                        />
+                        <span
+                          className={`font-display font-semibold text-xs truncate ${
+                            isActive ? 'text-[#1B3B2B] font-bold' : 'text-[#17231D]'
+                          }`}
+                        >
+                          {tpl.name}
+                        </span>
                       </div>
                       <button
+                        type="button"
                         onClick={() => onApplyPreset(tpl)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 shadow-2xs transition-all cursor-pointer ${
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold shrink-0 transition-all cursor-pointer ${
                           isActive
-                            ? 'bg-[#1B3B2B] text-white hover:bg-[#2A5B44]'
+                            ? 'bg-[#1B3B2B] text-white'
                             : 'bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[#17231D]'
                         }`}
                       >
@@ -929,85 +908,124 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#DCE3DC]/50">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {pal.name.split('·')[1]?.trim() || pal.name}
-                      </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {TRAJECTORIES[tpl.trajectory]?.name} ({tpl.frequency.toFixed(2)} Hz)
-                      </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {tpl.soundType === 'heartbeat'
-                          ? 'Latido Somático'
-                          : tpl.soundType === 'tibetan'
-                          ? 'Cuenco Zen'
-                          : tpl.soundType === 'water'
-                          ? 'Gota de Loto'
-                          : 'Click Metrónomo'}
-                      </span>
+                    {/* Fila de 4 Elementos Clave en Orden Exacto Solicitado:
+                        1) Modalidad -> 2) Sonido (Frecuencia) -> 3) Figura -> 4) Movimiento */}
+                    <div className="grid grid-cols-4 gap-1 text-[10px] font-mono pt-1 border-t border-[#DCE3DC]/60 items-center">
+                      {/* 1. Modalidad */}
+                      <div className="flex items-center gap-1 bg-[#EFF2EE] px-1.5 py-0.5 rounded text-[#17231D]" title="Modalidad de estimulación">
+                        <span className="material-symbols-outlined text-[13px] text-[#1B3B2B]">
+                          {modLabel === 'Auditivo' ? 'headphones' : modLabel === 'Visual' ? 'visibility' : 'sync_alt'}
+                        </span>
+                        <span className="truncate">{modLabel}</span>
+                      </div>
+
+                      {/* 2. Sonido (Frecuencia) */}
+                      <div className="flex items-center gap-1 bg-[#EFF2EE] px-1.5 py-0.5 rounded text-[#17231D]" title="Timbre de audio y frecuencia">
+                        <span className="truncate">{soundLabel} · {tpl.frequency.toFixed(2)}Hz</span>
+                      </div>
+
+                      {/* 3. Forma mostrada de la figura */}
+                      <div className="flex items-center justify-center gap-1 bg-[#EFF2EE] px-1.5 py-0.5 rounded text-[#17231D]" title={`Figura: ${tpl.stimulus}`}>
+                        {tpl.stimulus === 'circle' && <div className="w-2.5 h-2.5 rounded-full bg-[#1B3B2B]" />}
+                        {tpl.stimulus === 'drop' && (
+                          <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#1B3B2B]" fill="currentColor">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                          </svg>
+                        )}
+                        {tpl.stimulus === 'heart' && (
+                          <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#1B3B2B]" fill="currentColor">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                          </svg>
+                        )}
+                        {tpl.stimulus === 'diamond' && (
+                          <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#1B3B2B]" fill="currentColor">
+                            <path d="M12 2L2 12l10 10 10-10L12 2z" />
+                          </svg>
+                        )}
+                        {tpl.stimulus === 'star' && (
+                          <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#1B3B2B]" fill="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                        )}
+                        {tpl.stimulus === 'led-bar' && (
+                          <span className="text-[9px] font-bold text-[#1B3B2B]">LED</span>
+                        )}
+                        {tpl.stimulus === 'sweep' && (
+                          <span className="text-[9px] font-bold text-[#1B3B2B]">Barrido</span>
+                        )}
+                        {tpl.stimulus === 'edges' && (
+                          <span className="text-[9px] font-bold text-[#1B3B2B]">Borde</span>
+                        )}
+                        <span className="capitalize truncate text-[9px]">{tpl.stimulus}</span>
+                      </div>
+
+                      {/* 4. Movimiento / Trayectoria */}
+                      <div className="flex items-center gap-1 bg-[#EFF2EE] px-1.5 py-0.5 rounded text-[#17231D]" title="Trayectoria cinemática">
+                        <span className="material-symbols-outlined text-[12px] text-[#1B3B2B]">gesture</span>
+                        <span className="truncate">{TRAJECTORIES[tpl.trajectory]?.name || tpl.trajectory}</span>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Guardar plantilla personalizada */}
-            <div className="pt-3 border-t border-[#DCE3DC]/70 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#17231D] flex items-center gap-1.5 font-mono uppercase tracking-wide">
-                  <span className="material-symbols-outlined text-[16px] text-[#1B3B2B]">save</span>
-                  <span>Guardar Plantilla de Paciente</span>
-                </span>
-                <span className="text-[10px] text-[#5B6960] font-mono">Configuración actual</span>
-              </div>
-              <form onSubmit={handleSaveCustom} className="flex gap-2">
+            {/* Guardar plantilla personalizada compacta */}
+            <div className="pt-2 border-t border-[#DCE3DC]/70 flex flex-col gap-2">
+              <span className="text-xs font-semibold text-[#17231D] flex items-center gap-1 font-mono uppercase tracking-wide">
+                <span className="material-symbols-outlined text-[15px] text-[#1B3B2B]">save</span>
+                <span>Guardar Personalizada</span>
+              </span>
+              <form onSubmit={handleSaveCustom} className="flex gap-1.5">
                 <input
                   type="text"
-                  placeholder="Ej. Paciente M. G. · Sesión 4"
+                  placeholder="Ej. Paciente M.G. · Sesión 3"
                   value={customNameInput}
                   onChange={(e) => setCustomNameInput(e.target.value)}
-                  className="flex-1 text-xs px-3 py-2 bg-[#EFF2EE] border border-[#DCE3DC] rounded-xl focus:ring-1 focus:ring-[#1B3B2B] focus:outline-none"
+                  className="flex-1 text-xs px-2.5 py-1.5 bg-[#EFF2EE] border border-[#DCE3DC] rounded-xl focus:ring-1 focus:ring-[#1B3B2B] focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="px-3.5 py-2 bg-[#1B3B2B] hover:bg-[#2A5B44] text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1 shrink-0 transition-all cursor-pointer"
+                  className="px-3 py-1.5 bg-[#1B3B2B] hover:bg-[#2A5B44] text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1 shrink-0 transition-all cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[16px]">bookmark_add</span>
+                  <span className="material-symbols-outlined text-[14px]">bookmark_add</span>
                   <span>Guardar</span>
                 </button>
               </form>
 
-              {/* Lista de plantillas personalizadas */}
-              <div className="flex flex-col gap-2">
+              {/* Lista de personalizadas compacta */}
+              <div className="flex flex-col gap-1.5">
                 {customTemplates.length === 0 ? (
-                  <div className="text-[11px] text-[#5B6960] italic">
-                    No hay perfiles personalizados guardados aún.
+                  <div className="text-[10px] text-[#5B6960] italic py-1">
+                    No hay plantillas personalizadas guardadas.
                   </div>
                 ) : (
                   customTemplates.map((item) => (
                     <div
                       key={item.id}
-                      className="p-2.5 rounded-xl border border-[#DCE3DC] bg-white flex items-center justify-between gap-2 shadow-2xs"
+                      className="p-2 rounded-xl border border-[#DCE3DC] bg-white flex items-center justify-between gap-2 shadow-2xs"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-semibold text-[#17231D] truncate">{item.name}</div>
                         <div className="text-[10px] text-[#5B6960] font-mono truncate">
-                          Nvl {item.level} · {item.trajectory} · {item.stimulus}
+                          {item.modality === 'audio-only' ? 'Auditivo' : 'Visual'} · {item.soundType} · {item.stimulus} · {item.trajectory}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => onApplyCustomTemplate(item)}
-                          className="px-2 py-0.5 rounded bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[11px] font-semibold transition-all cursor-pointer"
+                          className="px-2 py-0.5 rounded bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[10px] font-semibold transition-all cursor-pointer"
                         >
                           Cargar
                         </button>
                         <button
+                          type="button"
                           onClick={() => onDeleteCustomTemplate(item.id)}
                           className="text-[#5B6960] hover:text-red-600 p-1 text-xs cursor-pointer"
                           title="Eliminar plantilla"
                         >
-                          <span className="material-symbols-outlined text-[15px]">delete</span>
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
                         </button>
                       </div>
                     </div>

@@ -252,7 +252,7 @@ export const StageViewport: React.FC<StageViewportProps> = ({
   }, [currentPos, settings.stimulus, settings.dotSize, settings.modality, stimulusColor]);
 
   const isAudioOnly = settings.modality === 'audio-only';
-  const isExperimental = ['led-bar', 'sweep', 'laser', 'edges'].includes(settings.stimulus);
+  const isExperimental = ['led-bar', 'sweep', 'edges'].includes(settings.stimulus);
 
   // Renderizador de figuras geométricas y siluetas
   const renderShapeContent = () => {
@@ -317,82 +317,84 @@ export const StageViewport: React.FC<StageViewportProps> = ({
         if (!isAudioUnlocked) onAudioUnlock();
       }}
     >
-      {/* Micro-barra superior del lienzo (Minimalista y Limpia) */}
-      <div className="absolute top-0 inset-x-0 h-10 px-4 flex items-center justify-between text-xs z-20 pointer-events-none select-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Indicador de estado discreto */}
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/5 text-[#17231D]/80 border border-black/5">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isPlaying && !isStoppingSmoothly
-                  ? 'bg-emerald-500 animate-ping'
-                  : isStoppingSmoothly
-                  ? 'bg-amber-500 animate-pulse'
-                  : 'bg-neutral-400'
-              }`}
-            />
-            <span>
-              {isAudioOnly ? (
-                isPlaying && !isStoppingSmoothly ? (
-                  'Audio Bilateral Activo'
+      {/* Micro-barra superior del lienzo (solo visible para terapeuta o si no es solo-auditivo) */}
+      {(!isPatient || !isAudioOnly) && (
+        <div className="absolute top-0 inset-x-0 h-10 px-4 flex items-center justify-between text-xs z-20 pointer-events-none select-none">
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {/* Indicador de estado discreto */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/5 text-[#17231D]/80 border border-black/5">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isPlaying && !isStoppingSmoothly
+                    ? 'bg-emerald-500 animate-ping'
+                    : isStoppingSmoothly
+                    ? 'bg-amber-500 animate-pulse'
+                    : 'bg-neutral-400'
+                }`}
+              />
+              <span>
+                {isAudioOnly ? (
+                  isPlaying && !isStoppingSmoothly ? (
+                    'Audio Bilateral Activo'
+                  ) : isStoppingSmoothly ? (
+                    'Pausando audio...'
+                  ) : (
+                    'Audio en Reposo'
+                  )
+                ) : isPlaying && !isStoppingSmoothly ? (
+                  'Estimulando'
                 ) : isStoppingSmoothly ? (
-                  'Pausando audio...'
+                  'Volviendo al centro...'
                 ) : (
-                  'Audio en Reposo'
-                )
-              ) : isPlaying && !isStoppingSmoothly ? (
-                'Estimulando'
-              ) : isStoppingSmoothly ? (
-                'Volviendo al centro...'
-              ) : (
-                'En reposo'
-              )}
-            </span>
+                  'En reposo'
+                )}
+              </span>
+            </div>
+
+            {!isAudioOnly && (
+              <>
+                <span className="text-neutral-400 text-xs hidden sm:inline">·</span>
+                <span className="text-neutral-500 text-[11px] font-medium hidden sm:inline">
+                  {TRAJECTORIES[settings.trajectory]?.name || 'Horizontal'}
+                </span>
+              </>
+            )}
+
+            {isAudioOnly && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                Solo Auditivo
+              </span>
+            )}
           </div>
 
-          {!isAudioOnly && (
-            <>
-              <span className="text-neutral-400 text-xs hidden sm:inline">·</span>
-              <span className="text-neutral-500 text-[11px] font-medium hidden sm:inline">
-                {TRAJECTORIES[settings.trajectory]?.name || 'Horizontal'}
-              </span>
-            </>
-          )}
-
-          {isAudioOnly && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-              Modo Solo Auditivo
+          {/* Indicador estéreo L / R */}
+          <div className="flex items-center gap-1 font-mono text-[10px] font-semibold text-neutral-400 pointer-events-auto">
+            <span
+              className="w-5 h-5 rounded flex items-center justify-center transition-all duration-100"
+              style={{
+                backgroundColor: activeSide === 'L' ? stimulusColor : 'rgba(0,0,0,0.06)',
+                color: activeSide === 'L' ? '#FFFFFF' : 'inherit'
+              }}
+            >
+              L
             </span>
-          )}
+            <span
+              className="w-5 h-5 rounded flex items-center justify-center transition-all duration-100"
+              style={{
+                backgroundColor: activeSide === 'R' ? stimulusColor : 'rgba(0,0,0,0.06)',
+                color: activeSide === 'R' ? '#FFFFFF' : 'inherit'
+              }}
+            >
+              R
+            </span>
+          </div>
         </div>
-
-        {/* Indicador estéreo L / R */}
-        <div className="flex items-center gap-1 font-mono text-[10px] font-semibold text-neutral-400 pointer-events-auto">
-          <span
-            className="w-5 h-5 rounded flex items-center justify-center transition-all duration-100"
-            style={{
-              backgroundColor: activeSide === 'L' ? stimulusColor : 'rgba(0,0,0,0.06)',
-              color: activeSide === 'L' ? '#FFFFFF' : 'inherit'
-            }}
-          >
-            L
-          </span>
-          <span
-            className="w-5 h-5 rounded flex items-center justify-center transition-all duration-100"
-            style={{
-              backgroundColor: activeSide === 'R' ? stimulusColor : 'rgba(0,0,0,0.06)',
-              color: activeSide === 'R' ? '#FFFFFF' : 'inherit'
-            }}
-          >
-            R
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* Escenario Activo */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
-        {/* Guía horizontal opcional */}
-        {settings.showGuideLine && !isAudioOnly && (
+        {/* Guía horizontal opcional (solo en modo visual) */}
+        {settings.showGuideLine && !isAudioOnly && (!isPatient || !isAudioOnly) && (
           <div
             className="absolute -translate-y-1/2 h-[1px] border-b border-dashed border-[#1B3B2B]/20 pointer-events-none transition-all duration-300"
             style={{
@@ -403,23 +405,21 @@ export const StageViewport: React.FC<StageViewportProps> = ({
           />
         )}
 
-        {/* Punto central discreto */}
-        {settings.showCenterAnchor && (
+        {/* Punto central discreto (solo en modo visual) */}
+        {settings.showCenterAnchor && !isAudioOnly && (
           <div
             className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none transition-opacity duration-300"
             style={{
               top: `${centerFrac() * 100}%`,
               backgroundColor: `${stimulusColor}35`,
-              opacity: isPlaying && !isStoppingSmoothly && !isAudioOnly ? 0 : 0.6
+              opacity: isPlaying && !isStoppingSmoothly ? 0 : 0.6
             }}
           />
         )}
 
-        {/* Canvas FX para láser */}
-        <canvas ref={canvasRef} className="fx-canvas" />
-
-        {/* MODO SOLO AUDITIVO: Vista serena y limpia con pulsos bilaterales L/R suaves */}
-        {isAudioOnly && (
+        {/* MODO SOLO AUDITIVO */}
+        {isAudioOnly && !isPatient && (
+          /* Terapeuta: monitor visual discreto para supervisar la alternancia estéreo */
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-4">
             <div className="relative flex items-center justify-center mb-3">
               {/* Pulso Izquierdo */}
@@ -463,16 +463,19 @@ export const StageViewport: React.FC<StageViewportProps> = ({
             </div>
 
             <span className="text-xs font-semibold text-[#17231D]">
-              Estimulación Bilateral Auditiva
+              Modo Solo Auditivo Activo
             </span>
             <span className="text-[11px] text-[#5B6960] mt-0.5">
               {isPlaying
                 ? activeSide === 'L'
-                  ? '← Sonido en oído izquierdo'
+                  ? '← Estimulación en oído izquierdo'
                   : activeSide === 'R'
-                  ? 'Sonido en oído derecho →'
-                  : 'Alternancia estéreo continua'
-                : 'Pulsa Iniciar para comenzar la estimulación auditiva'}
+                  ? 'Estimulación en oído derecho →'
+                  : 'Alternancia bilateral activa'
+                : 'Pulsa Iniciar para emitir el audio bilateral'}
+            </span>
+            <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full mt-2">
+              El paciente escucha la estimulación y no ve ningún estímulo en su pantalla
             </span>
           </div>
         )}
@@ -537,7 +540,7 @@ export const StageViewport: React.FC<StageViewportProps> = ({
               />
             )}
 
-            {/* Luces de borde (edges on/off instantáneas) */}
+            {/* Luces de borde (edges on/off instantáneas con lado contralateral 100% apagado) */}
             {settings.stimulus === 'edges' && (
               <>
                 <div
@@ -545,10 +548,10 @@ export const StageViewport: React.FC<StageViewportProps> = ({
                   style={{
                     backgroundColor: stimulusColor,
                     width: `${Math.max(20, settings.dotSize * 0.9)}px`,
-                    opacity: isStoppingSmoothly ? 0.05 : currentPos.lat <= 0 ? 1 : 0.04,
+                    opacity: isStoppingSmoothly ? 0 : currentPos.lat <= 0 ? 1 : 0,
                     transform: currentPos.lat <= 0 && !isStoppingSmoothly ? 'scale(1.15)' : 'scale(1)',
                     boxShadow:
-                      currentPos.lat <= 0 && !isStoppingSmoothly ? `0 0 20px ${stimulusColor}` : 'none'
+                      currentPos.lat <= 0 && !isStoppingSmoothly ? `0 0 24px ${stimulusColor}` : 'none'
                   }}
                 />
                 <div
@@ -556,10 +559,10 @@ export const StageViewport: React.FC<StageViewportProps> = ({
                   style={{
                     backgroundColor: stimulusColor,
                     width: `${Math.max(20, settings.dotSize * 0.9)}px`,
-                    opacity: isStoppingSmoothly ? 0.05 : currentPos.lat > 0 ? 1 : 0.04,
+                    opacity: isStoppingSmoothly ? 0 : currentPos.lat > 0 ? 1 : 0,
                     transform: currentPos.lat > 0 && !isStoppingSmoothly ? 'scale(1.15)' : 'scale(1)',
                     boxShadow:
-                      currentPos.lat > 0 && !isStoppingSmoothly ? `0 0 20px ${stimulusColor}` : 'none'
+                      currentPos.lat > 0 && !isStoppingSmoothly ? `0 0 24px ${stimulusColor}` : 'none'
                   }}
                 />
               </>

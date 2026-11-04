@@ -24,8 +24,8 @@
 .traj-card {
   background-color: #ffffff;
   border: 1.5px solid #E2E6E2;
-  border-radius: 0.85rem;
-  padding: 0.85rem 0.65rem;
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.35rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -33,7 +33,7 @@
   text-align: center;
   cursor: pointer;
   transition: all 0.18s ease;
-  min-height: 82px;
+  min-height: 52px;
   user-select: none;
 }
 .traj-card:hover {
@@ -59,8 +59,8 @@
 .stim-card {
   background-color: #ffffff;
   border: 1.5px solid #E2E6E2;
-  border-radius: 0.85rem;
-  padding: 0.75rem 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.35rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -68,7 +68,7 @@
   text-align: center;
   cursor: pointer;
   transition: all 0.18s ease;
-  min-height: 74px;
+  min-height: 58px;
   user-select: none;
 }
 .stim-card:hover {
@@ -133,8 +133,8 @@
   pointer-events: none;
   border-radius: 20px;
   z-index: 10;
-  transition: opacity 0.08s linear, transform 0.08s linear;
-  opacity: 0.12;
+  transition: opacity 0.06s linear, transform 0.06s linear;
+  opacity: 0;
 }
 .edge-light-left { left: 20px; }
 .edge-light-right { right: 20px; }

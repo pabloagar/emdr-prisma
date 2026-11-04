@@ -19,7 +19,6 @@ export type StimulusShape =
   | 'star'
   | 'led-bar'
   | 'sweep'
-  | 'laser'
   | 'edges';
 
 export type StimulationModality = 'both' | 'audio-only' | 'visual-only';

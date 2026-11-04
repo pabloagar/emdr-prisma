@@ -369,6 +369,12 @@ export const App: React.FC = () => {
             activeTrajectory={settings.trajectory}
             onSelectTrajectory={(t) => handleUpdateSettings({ trajectory: t })}
             modality={settings.modality}
+            onToggleModality={() =>
+              handleUpdateSettings({
+                modality: settings.modality === 'audio-only' ? 'both' : 'audio-only',
+                soundActive: true
+              })
+            }
             soundType={settings.soundType}
             onSelectSound={(s) => handleUpdateSettings({ soundType: s })}
           />

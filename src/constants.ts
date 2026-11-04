@@ -62,7 +62,7 @@ export const PRESET_TEMPLATES: Record<string, PresetTemplate> = {
     name: 'Foco Nítido & Desbloqueo',
     palette: 'bruma',
     bg: '#F4F7F9',
-    stimulus: 'laser',
+    stimulus: 'sweep',
     dotSize: 30,
     trajectory: 'infinity',
     level: 10,

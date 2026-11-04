@@ -154,17 +154,39 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           </div>
         </div>
 
-        {/* SELECTOR RÁPIDO CONTEXTUAL: Trayectorias si es visual, o Timbres de sonido si es solo auditivo */}
-        {!isAudioOnly ? (
-          <div className="hidden sm:flex items-center gap-1 bg-[#EFF2EE] p-1 rounded-xl border border-[#DCE3DC]/50 shrink-0">
+        {/* SELECTOR RÁPIDO CONTEXTUAL Y BOTÓN DE MODALIDAD */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onToggleModality && (
             <button
-              onClick={() => onSelectTrajectory('horizontal')}
-              className={`p-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all cursor-pointer ${
-                activeTrajectory === 'horizontal'
-                  ? 'text-[#1B3B2B] bg-white shadow-2xs font-semibold'
-                  : 'text-[#5B6960] hover:text-[#17231D]'
+              type="button"
+              onClick={onToggleModality}
+              title={isAudioOnly ? 'Cambiar a Visual + Audio' : 'Cambiar a Solo Auditivo'}
+              className={`p-1.5 rounded-xl border flex items-center gap-1.5 px-2.5 transition-all cursor-pointer ${
+                isAudioOnly
+                  ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] shadow-2xs'
+                  : 'bg-[#EFF2EE] text-[#1B3B2B] border-[#DCE3DC] hover:bg-white'
               }`}
             >
+              <span className="material-symbols-outlined text-[16px]">
+                {isAudioOnly ? 'headphones' : 'visibility'}
+              </span>
+              <span className="text-[11px] font-medium hidden lg:inline">
+                {isAudioOnly ? 'Solo Auditivo' : 'Visual'}
+              </span>
+            </button>
+          )}
+
+          {!isAudioOnly ? (
+            <div className="hidden sm:flex items-center gap-1 bg-[#EFF2EE] p-1 rounded-xl border border-[#DCE3DC]/50">
+              <button
+                type="button"
+                onClick={() => onSelectTrajectory('horizontal')}
+                className={`p-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all cursor-pointer ${
+                  activeTrajectory === 'horizontal'
+                    ? 'text-[#1B3B2B] bg-white shadow-2xs font-semibold'
+                    : 'text-[#5B6960] hover:text-[#17231D]'
+                }`}
+              >
               <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
               <span>Horizontal</span>
             </button>
@@ -237,8 +259,9 @@ export const BottomBar: React.FC<BottomBarProps> = ({
               <span className="material-symbols-outlined text-[14px]">touch_app</span>
               <span>Click</span>
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
