@@ -100,3 +100,29 @@ export interface RemoteCredentials {
 export type Role = 'therapist' | 'patient';
 
 export type KineticType = 'binary-instant' | 'linear-pingpong' | 'harmonic-classic';
+
+export interface StimulationBlock {
+  blockNumber: number;
+  modality: StimulationModality;
+  durationSeconds: number;
+  cycles: number;
+  initialFrequency: number;
+  finalFrequency: number;
+  minFrequency: number;
+  maxFrequency: number;
+  trajectory: TrajectoryType;
+  stimulus: StimulusShape;
+  startTime: number;
+  endTime: number;
+}
+
+export interface TechnicalSessionReport {
+  totalActiveSeconds: number;
+  totalBlocks: number;
+  totalCycles: number;
+  predominantFrequency: number;
+  frequencyRange: { min: number; max: number };
+  modalitiesUsed: StimulationModality[];
+  modalityStats: Record<StimulationModality, { blocks: number; seconds: number }>;
+  blocks: StimulationBlock[];
+}

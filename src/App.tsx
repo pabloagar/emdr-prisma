@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   SessionSettings,
   Role,
   PresetTemplate,
-  CustomTemplate
+  CustomTemplate,
+  StimulationBlock,
+  TechnicalSessionReport,
+  StimulationModality
 } from './types';
 import {
   DEFAULT_SETTINGS,
@@ -57,6 +60,21 @@ export const App: React.FC = () => {
   const [timerSeconds, setTimerSeconds] = useState<number>(0);
   const [passes, setPasses] = useState<number>(0);
 
+  // REGISTRO TÉCNICO DE BLOQUES DE ESTIMULACIÓN (datos reales sin simulación)
+  const [sessionBlocks, setSessionBlocks] = useState<StimulationBlock[]>([]);
+  const activeBlockRef = useRef<{
+    blockNumber: number;
+    modality: StimulationModality;
+    startTime: number;
+    startPasses: number;
+    initialFrequency: number;
+    finalFrequency: number;
+    minFrequency: number;
+    maxFrequency: number;
+    trajectory: SessionSettings['trajectory'];
+    stimulus: SessionSettings['stimulus'];
+  } | null>(null);
+
   // Modales y paneles
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [sidebarTab, setSidebarTab] = useState<'stimuli' | 'traj' | 'audio' | 'palettes' | 'templates'>('stimuli');
@@ -77,7 +95,7 @@ export const App: React.FC = () => {
 
   const timerIntervalRef = useRef<number | null>(null);
 
-  // Manejo del cronómetro
+  // Manejo del cronómetro (solo tiempo activo, nunca pausa)
   useEffect(() => {
     if (isPlaying && !isStoppingSmoothly) {
       if (!timerIntervalRef.current) {
@@ -112,6 +130,8 @@ export const App: React.FC = () => {
     }
     setTimerSeconds(0);
     setPasses(0);
+    setSessionBlocks([]);
+    activeBlockRef.current = null;
   };
 
   // Desbloqueo de Audio
@@ -137,7 +157,21 @@ export const App: React.FC = () => {
     setIsStoppingSmoothly(false);
     setIsPlaying(true);
     setShowDisconnectedOverlay(false);
-  }, []);
+
+    // Iniciar registro de bloque técnico
+    activeBlockRef.current = {
+      blockNumber: sessionBlocks.length + 1,
+      modality: settings.modality,
+      startTime: Date.now(),
+      startPasses: passes,
+      initialFrequency: settings.frequency,
+      finalFrequency: settings.frequency,
+      minFrequency: settings.frequency,
+      maxFrequency: settings.frequency,
+      trajectory: settings.trajectory,
+      stimulus: settings.stimulus
+    };
+  }, [passes, sessionBlocks.length, settings]);
 
   const handleRemotePause = useCallback(() => {
     setIsStoppingSmoothly(true);
@@ -165,44 +199,101 @@ export const App: React.FC = () => {
   } = useRealtimeSync({
     role,
     roomId,
+    onRoomIdChange: (newId) => setRoomId(newId),
     settings,
+    isPlaying,
     onApplyRemoteSettings: handleApplyRemoteSettings,
     onRemoteStart: handleRemoteStart,
     onRemotePause: handleRemotePause,
     onRemoteStop: handleRemoteStop
   });
 
-  // Toggle Iniciar / Pausa suave
+  const activeRoomId = credentials?.roomId || roomId;
+
+  // Toggle Iniciar / Pausa suave y gestión de bloques técnicos
   const handlePlayToggle = () => {
     audioEngine.unlock();
     setIsAudioUnlocked(true);
 
     if (isPlaying && !isStoppingSmoothly) {
+      // Pausar y cerrar bloque actual
       setIsStoppingSmoothly(true);
       sendPause();
+      finalizeCurrentBlock();
     } else {
+      // Iniciar nuevo bloque técnico
       setIsStoppingSmoothly(false);
       setIsPlaying(true);
       sendStart();
+
+      activeBlockRef.current = {
+        blockNumber: sessionBlocks.length + 1,
+        modality: settings.modality,
+        startTime: Date.now(),
+        startPasses: passes,
+        initialFrequency: settings.frequency,
+        finalFrequency: settings.frequency,
+        minFrequency: settings.frequency,
+        maxFrequency: settings.frequency,
+        trajectory: settings.trajectory,
+        stimulus: settings.stimulus
+      };
     }
   };
+
+  const finalizeCurrentBlock = useCallback(() => {
+    if (!activeBlockRef.current) return;
+    const now = Date.now();
+    const durSec = Math.max(1, (now - activeBlockRef.current.startTime) / 1000);
+    const blockCycles = Math.max(0, passes - activeBlockRef.current.startPasses);
+
+    const completedBlock: StimulationBlock = {
+      blockNumber: activeBlockRef.current.blockNumber,
+      modality: activeBlockRef.current.modality,
+      durationSeconds: durSec,
+      cycles: blockCycles,
+      initialFrequency: activeBlockRef.current.initialFrequency,
+      finalFrequency: activeBlockRef.current.finalFrequency,
+      minFrequency: activeBlockRef.current.minFrequency,
+      maxFrequency: activeBlockRef.current.maxFrequency,
+      trajectory: activeBlockRef.current.trajectory,
+      stimulus: activeBlockRef.current.stimulus,
+      startTime: activeBlockRef.current.startTime,
+      endTime: now
+    };
+
+    setSessionBlocks((prev) => [...prev, completedBlock]);
+    activeBlockRef.current = null;
+  }, [passes]);
 
   const handleSmoothStopFinished = useCallback(() => {
     setIsStoppingSmoothly(false);
     setIsPlaying(false);
-  }, []);
+    finalizeCurrentBlock();
+  }, [finalizeCurrentBlock]);
 
   const handlePassIncrement = useCallback(() => {
     setPasses((prev) => prev + 1);
   }, []);
 
-  // Actualizar settings locales
+  // Actualizar settings locales y actualizar bloque activo si está corriendo
   const handleUpdateSettings = (patch: Partial<SessionSettings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
-      if (patch.level !== undefined) {
+      if (patch.level !== undefined && patch.frequency === undefined) {
         next.frequency = frequencyFromLevel(patch.level);
       }
+
+      // Si hay un bloque activo, actualizar su registro de frecuencia
+      if (activeBlockRef.current && next.frequency) {
+        activeBlockRef.current.finalFrequency = next.frequency;
+        activeBlockRef.current.minFrequency = Math.min(activeBlockRef.current.minFrequency, next.frequency);
+        activeBlockRef.current.maxFrequency = Math.max(activeBlockRef.current.maxFrequency, next.frequency);
+        if (patch.trajectory) activeBlockRef.current.trajectory = patch.trajectory;
+        if (patch.stimulus) activeBlockRef.current.stimulus = patch.stimulus;
+        if (patch.modality) activeBlockRef.current.modality = patch.modality;
+      }
+
       return next;
     });
   };
@@ -240,51 +331,57 @@ export const App: React.FC = () => {
       palette: settings.palette,
       bg: settings.bg,
       stimulus: settings.stimulus,
+      stimulusColor: settings.stimulusColor,
+      modality: settings.modality,
       dotSize: settings.dotSize,
       trajectory: settings.trajectory,
       level: settings.level,
       soundActive: settings.soundActive,
       soundType: settings.soundType,
+      amplitude: settings.amplitude,
       createdAt: Date.now()
     };
-    const updated = [newTpl, ...customTemplates];
-    setCustomTemplates(updated);
+    const nextList = [newTpl, ...customTemplates];
+    setCustomTemplates(nextList);
     try {
-      localStorage.setItem('bilateral_custom_templates', JSON.stringify(updated));
+      localStorage.setItem('bilateral_custom_templates', JSON.stringify(nextList));
     } catch {}
-    setActiveTemplateName(name);
   };
 
   const handleDeleteCustomTemplate = (id: string) => {
-    const updated = customTemplates.filter((t) => t.id !== id);
-    setCustomTemplates(updated);
+    const nextList = customTemplates.filter((t) => t.id !== id);
+    setCustomTemplates(nextList);
     try {
-      localStorage.setItem('bilateral_custom_templates', JSON.stringify(updated));
+      localStorage.setItem('bilateral_custom_templates', JSON.stringify(nextList));
     } catch {}
   };
 
   const handleApplyCustomTemplate = (tpl: CustomTemplate) => {
+    setActiveTemplateId(tpl.id);
     setActiveTemplateName(tpl.name);
     setSettings((prev) => ({
       ...prev,
       palette: tpl.palette,
       bg: tpl.bg,
       stimulus: tpl.stimulus,
+      stimulusColor: tpl.stimulusColor || null,
+      modality: tpl.modality || 'both',
       dotSize: tpl.dotSize,
       trajectory: tpl.trajectory,
       level: tpl.level,
       frequency: frequencyFromLevel(tpl.level),
+      amplitude: tpl.amplitude || 0.85,
       soundActive: tpl.soundActive,
       soundType: tpl.soundType
     }));
   };
 
-  // Atajos de teclado
+  // Teclado (espacio: pausa, flechas: velocidad)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea') return;
+
       if (e.code === 'Space') {
         e.preventDefault();
         handlePlayToggle();
@@ -303,7 +400,7 @@ export const App: React.FC = () => {
   // Copiar enlace paciente
   const handleCopyPatientLink = async () => {
     const url = `${window.location.origin}${window.location.pathname}?role=patient&room=${encodeURIComponent(
-      credentials?.roomId || roomId
+      activeRoomId
     )}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -312,14 +409,78 @@ export const App: React.FC = () => {
     }
   };
 
+  // Cálculo del reporte técnico en tiempo real
+  const technicalReport: TechnicalSessionReport = useMemo(() => {
+    const allBlocks = [...sessionBlocks];
+    if (isPlaying && activeBlockRef.current) {
+      const liveSec = (Date.now() - activeBlockRef.current.startTime) / 1000;
+      const liveCycles = Math.max(0, passes - activeBlockRef.current.startPasses);
+      allBlocks.push({
+        blockNumber: activeBlockRef.current.blockNumber,
+        modality: activeBlockRef.current.modality,
+        durationSeconds: liveSec,
+        cycles: liveCycles,
+        initialFrequency: activeBlockRef.current.initialFrequency,
+        finalFrequency: activeBlockRef.current.finalFrequency,
+        minFrequency: activeBlockRef.current.minFrequency,
+        maxFrequency: activeBlockRef.current.maxFrequency,
+        trajectory: activeBlockRef.current.trajectory,
+        stimulus: activeBlockRef.current.stimulus,
+        startTime: activeBlockRef.current.startTime,
+        endTime: Date.now()
+      });
+    }
+
+    const totalActiveSeconds = allBlocks.reduce((acc, b) => acc + b.durationSeconds, 0);
+    const totalBlocks = allBlocks.length;
+    const totalCycles = passes; // Conteo real de pasadas bilaterales no duplicadas
+
+    let minF = settings.frequency;
+    let maxF = settings.frequency;
+    let sumWeightedF = 0;
+    let sumDur = 0;
+
+    const modalityStats: Record<StimulationModality, { blocks: number; seconds: number }> = {
+      both: { blocks: 0, seconds: 0 },
+      'audio-only': { blocks: 0, seconds: 0 },
+      'visual-only': { blocks: 0, seconds: 0 }
+    };
+    const modalitiesSet = new Set<StimulationModality>();
+
+    allBlocks.forEach((b) => {
+      minF = Math.min(minF, b.minFrequency);
+      maxF = Math.max(maxF, b.maxFrequency);
+      const avgF = (b.initialFrequency + b.finalFrequency) / 2;
+      sumWeightedF += avgF * b.durationSeconds;
+      sumDur += b.durationSeconds;
+
+      modalitiesSet.add(b.modality);
+      modalityStats[b.modality].blocks += 1;
+      modalityStats[b.modality].seconds += b.durationSeconds;
+    });
+
+    const predominantFrequency = sumDur > 0 ? sumWeightedF / sumDur : settings.frequency;
+
+    return {
+      totalActiveSeconds,
+      totalBlocks,
+      totalCycles,
+      predominantFrequency,
+      frequencyRange: { min: minF, max: maxF },
+      modalitiesUsed: Array.from(modalitiesSet),
+      modalityStats,
+      blocks: sessionBlocks
+    };
+  }, [sessionBlocks, isPlaying, passes, settings.frequency]);
+
   const currentPaletteDef = PALETTES[settings.palette] || PALETTES.salvia;
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[#F7F8F6] text-[#17231D]">
-      {/* Cabecera clínica (solo visible en modo profesional) */}
+      {/* Cabecera clínica con botón de sala llamativo y copiar directo */}
       {!isPatient && (
         <TherapistHeader
-          roomId={credentials?.roomId || roomId}
+          roomId={activeRoomId}
           timerFormatted={formatTimer(timerSeconds)}
           onResetTimer={handleResetTimer}
           syncStatus={syncStatus}
@@ -335,6 +496,7 @@ export const App: React.FC = () => {
           isSidebarOpen={isSidebarOpen}
           onOpenReport={() => setIsReportModalOpen(true)}
           onOpenRemoteModal={() => setIsRemoteModalOpen(true)}
+          onCopyPatientLink={handleCopyPatientLink}
         />
       )}
 
@@ -357,7 +519,7 @@ export const App: React.FC = () => {
           isAudioUnlocked={isAudioUnlocked}
         />
 
-        {/* Barra inferior de control (solo en modo profesional) */}
+        {/* Barra inferior de control con barra de tamaño y cambio de dirección */}
         {!isPatient && (
           <BottomBar
             isPlaying={isPlaying}
@@ -366,6 +528,8 @@ export const App: React.FC = () => {
             level={settings.level}
             frequency={settings.frequency}
             onLevelChange={handleLevelChange}
+            dotSize={settings.dotSize}
+            onDotSizeChange={(sz) => handleUpdateSettings({ dotSize: sz })}
             activeTrajectory={settings.trajectory}
             onSelectTrajectory={(t) => handleUpdateSettings({ trajectory: t })}
             modality={settings.modality}
@@ -416,12 +580,11 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Modal de Informe Clínico */}
+      {/* Modal de Registro Técnico de la Sesión */}
       <ClinicalReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        passes={passes}
-        timeFormatted={formatTimer(timerSeconds)}
+        report={technicalReport}
       />
 
       {/* Modal de Gestión de Sala Remota */}
