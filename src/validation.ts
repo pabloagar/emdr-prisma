@@ -19,7 +19,22 @@ export const allowedTrajectories = [
   'smooth-random'
 ];
 
-export const allowedStimuli = ['circle', 'soft', 'ring', 'sweep', 'laser', 'led-bar', 'edges'];
+export const allowedStimuli = [
+  'circle',
+  'soft',
+  'ring',
+  'drop',
+  'heart',
+  'diamond',
+  'star',
+  'butterfly',
+  'square',
+  'sweep',
+  'laser',
+  'led-bar',
+  'edges'
+];
+
 export const allowedSounds = ['heartbeat', 'tibetan', 'water', 'click', 'wood', 'soft', 'tone', 'silence'];
 export const hexRegex = /^#[0-9a-fA-F]{6}$/;
 
@@ -58,6 +73,18 @@ export function cleanSettings(value: Record<string, unknown>): Partial<SessionSe
     }
     out.stimulus = value.stimulus;
   }
+  if (value.stimulusColor !== undefined) {
+    if (value.stimulusColor === null) {
+      out.stimulusColor = null;
+    } else if (typeof value.stimulusColor === 'string' && hexRegex.test(value.stimulusColor)) {
+      out.stimulusColor = value.stimulusColor;
+    }
+  }
+  if (value.modality !== undefined) {
+    if (['both', 'audio-only', 'visual-only'].includes(value.modality as string)) {
+      out.modality = value.modality;
+    }
+  }
   if (value.soundType !== undefined) {
     if (
       typeof value.soundType !== 'string' ||
@@ -94,6 +121,12 @@ export function cleanSettings(value: Record<string, unknown>): Partial<SessionSe
   if (value.posY !== undefined && ['top', 'center', 'bottom'].includes(value.posY as string)) {
     out.posY = value.posY;
   }
+  if (value.showGuideLine !== undefined) {
+    out.showGuideLine = Boolean(value.showGuideLine);
+  }
+  if (value.showCenterAnchor !== undefined) {
+    out.showCenterAnchor = Boolean(value.showCenterAnchor);
+  }
 
   if (Object.keys(out).length === 0) throw new Error('No hay parámetros');
   return out as Partial<SessionSettings>;
@@ -104,13 +137,17 @@ export const DEFAULT_SETTINGS: SessionSettings = {
   frequency: 0.79,
   trajectory: 'horizontal',
   stimulus: 'circle',
+  stimulusColor: null,
+  modality: 'both',
   soundActive: true,
   soundType: 'heartbeat',
   dotSize: 32,
   palette: 'salvia',
   bg: '#faf8f5',
   amplitude: 0.85,
-  posY: 'center'
+  posY: 'center',
+  showGuideLine: false,
+  showCenterAnchor: true
 };
 
 export function safeParse<T = unknown>(text: string): T {

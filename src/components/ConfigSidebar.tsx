@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   SessionSettings,
   PaletteKey,
-  StimulusType,
+  StimulusShape,
   TrajectoryType,
   SoundType,
   CustomTemplate,
-  PresetTemplate
+  PresetTemplate,
+  StimulationModality
 } from '../types';
 import { PALETTES, QUICK_BG_OPTIONS, PRESET_TEMPLATES, TRAJECTORIES } from '../constants';
 import { audioEngine } from '../audio';
@@ -22,7 +23,8 @@ interface ConfigSidebarProps {
   onSaveCustomTemplate: (name: string) => void;
   onDeleteCustomTemplate: (id: string) => void;
   onApplyCustomTemplate: (tpl: CustomTemplate) => void;
-  initialTab?: 'templates' | 'palettes' | 'stimuli' | 'traj' | 'audio';
+  activeTab?: 'stimuli' | 'traj' | 'audio' | 'palettes' | 'templates';
+  onTabChange?: (tab: 'stimuli' | 'traj' | 'audio' | 'palettes' | 'templates') => void;
 }
 
 export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
@@ -36,12 +38,18 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
   onSaveCustomTemplate,
   onDeleteCustomTemplate,
   onApplyCustomTemplate,
-  initialTab = 'templates'
+  activeTab: controlledTab,
+  onTabChange
 }) => {
-  const [activeTab, setActiveTab] = useState<'templates' | 'palettes' | 'stimuli' | 'traj' | 'audio'>(
-    initialTab
-  );
+  const [internalTab, setInternalTab] = useState<'stimuli' | 'traj' | 'audio' | 'palettes' | 'templates'>('stimuli');
   const [customNameInput, setCustomNameInput] = useState('');
+
+  const currentTab = controlledTab ?? internalTab;
+
+  const handleTabClick = (tab: 'stimuli' | 'traj' | 'audio' | 'palettes' | 'templates') => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
 
   if (!isOpen) return null;
 
@@ -59,8 +67,22 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
     }, 260);
   };
 
+  const colorPresets = [
+    { label: 'Esmeralda', hex: '#1B3B2B' },
+    { label: 'Zafiro', hex: '#1C364A' },
+    { label: 'Terracota', hex: '#8C3A27' },
+    { label: 'Amatista', hex: '#54366A' },
+    { label: 'Ámbar', hex: '#9E6B1F' },
+    { label: 'Carbón', hex: '#17231D' },
+    { label: 'Verde Menta', hex: '#2A5B44' },
+    { label: 'Ciruela', hex: '#7A233D' },
+    { label: 'Oro Suave', hex: '#C29744' }
+  ];
+
+  const currentStimulusColor = settings.stimulusColor || PALETTES[settings.palette]?.primary || '#1B3B2B';
+
   return (
-    <aside className="w-full md:w-[480px] lg:w-[520px] shrink-0 bg-white border border-[#DCE3DC] rounded-2xl sm:rounded-3xl shadow-lg flex flex-col overflow-hidden transition-all duration-300 z-30 select-none">
+    <aside className="w-full md:w-[480px] lg:w-[520px] shrink-0 bg-white border border-[#DCE3DC] rounded-2xl sm:rounded-3xl shadow-xl flex flex-col overflow-hidden transition-all duration-300 z-30 select-none">
       {/* Header */}
       <div className="p-4 border-b border-[#DCE3DC] flex items-center justify-between bg-[#EFF2EE]/50 shrink-0">
         <div className="flex items-center gap-2">
@@ -69,59 +91,38 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           </div>
           <div>
             <h2 className="font-display font-bold text-xs text-[#17231D] uppercase tracking-wide">
-              Configuración Total
+              Ajustes de Sesión
             </h2>
-            <p className="text-[11px] text-[#5B6960]">Lógica de paletas y física de estímulos en vivo</p>
+            <p className="text-[11px] text-[#5B6960]">Estímulos, audio, recorrido y figuras</p>
           </div>
         </div>
         <button
           onClick={onClose}
           className="text-[#5B6960] hover:text-[#17231D] p-1.5 rounded-lg hover:bg-white text-xs flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <span className="text-[11px] font-medium hidden sm:inline">Colapsar</span>
-          <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          <span className="text-[11px] font-medium hidden sm:inline">Cerrar</span>
+          <span className="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
 
-      {/* Pestañas */}
-      <div className="flex border-b border-[#DCE3DC] bg-white text-xs font-medium shrink-0">
+      {/* Pestañas Reordenadas */}
+      <div className="flex border-b border-[#DCE3DC] bg-white text-xs font-medium shrink-0 overflow-x-auto hide-scrollbar">
         <button
-          onClick={() => setActiveTab('templates')}
-          className={`tab-btn flex-1 py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'templates'
+          onClick={() => handleTabClick('stimuli')}
+          className={`tab-btn flex-1 min-w-[85px] py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+            currentTab === 'stimuli'
               ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
               : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
           }`}
         >
-          <span className="material-symbols-outlined text-[16px]">bookmarks</span>
-          <span>Plantillas</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('palettes')}
-          className={`tab-btn flex-1 py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'palettes'
-              ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
-              : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px]">palette</span>
-          <span>Paletas</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('stimuli')}
-          className={`tab-btn flex-1 py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'stimuli'
-              ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
-              : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px]">wb_sunny</span>
+          <span className="material-symbols-outlined text-[16px]">shapes</span>
           <span>Estímulos</span>
         </button>
+
         <button
-          onClick={() => setActiveTab('traj')}
-          className={`tab-btn flex-1 py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'traj'
+          onClick={() => handleTabClick('traj')}
+          className={`tab-btn flex-1 min-w-[85px] py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+            currentTab === 'traj'
               ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
               : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
           }`}
@@ -129,10 +130,11 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           <span className="material-symbols-outlined text-[16px]">gesture</span>
           <span>Trayectorias</span>
         </button>
+
         <button
-          onClick={() => setActiveTab('audio')}
-          className={`tab-btn flex-1 py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'audio'
+          onClick={() => handleTabClick('audio')}
+          className={`tab-btn flex-1 min-w-[75px] py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+            currentTab === 'audio'
               ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
               : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
           }`}
@@ -140,185 +142,627 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           <span className="material-symbols-outlined text-[16px]">headphones</span>
           <span>Audio</span>
         </button>
+
+        <button
+          onClick={() => handleTabClick('palettes')}
+          className={`tab-btn flex-1 min-w-[75px] py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+            currentTab === 'palettes'
+              ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
+              : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">palette</span>
+          <span>Paletas</span>
+        </button>
+
+        <button
+          onClick={() => handleTabClick('templates')}
+          className={`tab-btn flex-1 min-w-[85px] py-2.5 text-center border-b-2 flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+            currentTab === 'templates'
+              ? 'border-[#1B3B2B] text-[#1B3B2B] font-semibold'
+              : 'border-transparent text-[#5B6960] hover:text-[#17231D]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">bookmarks</span>
+          <span>Plantillas</span>
+        </button>
       </div>
 
       {/* Contenido Pestañas */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col gap-6 hide-scrollbar">
-        {/* PESTAÑA 1: PLANTILLAS */}
-        {activeTab === 'templates' && (
-          <section className="flex flex-col gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
-                  Plantillas Clínicas Preconfiguradas
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  EMDR Standard
+        {/* ========================================================= */}
+        {/* PESTAÑA 1: ESTÍMULOS, FIGURAS, COLOR Y RECORRIDO          */}
+        {/* ========================================================= */}
+        {currentTab === 'stimuli' && (
+          <section className="flex flex-col gap-5">
+            {/* Modalidad de Estimulación: Prioridad Solo Auditivo, luego Visual + Audio, luego Solo Visual */}
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-[#EFF2EE] border border-[#DCE3DC]">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#17231D] flex items-center gap-1 font-mono uppercase tracking-wide">
+                  <span className="material-symbols-outlined text-[16px] text-[#1B3B2B]">tune</span>
+                  <span>Modalidad de Estimulación</span>
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white text-[#1B3B2B] font-bold">
+                  {settings.modality === 'audio-only'
+                    ? 'Solo Auditivo'
+                    : settings.modality === 'visual-only'
+                    ? 'Solo Visual'
+                    : 'Visual + Audio'}
                 </span>
               </div>
-              <p className="text-[11px] text-[#5B6960]">
-                Protocolos clínicos validados con combinaciones de paleta, cinemática, velocidad y audio optimizadas.
-              </p>
+              <div className="grid grid-cols-3 gap-2 mt-1">
+                {/* 1. Solo Auditivo (Prioridad) */}
+                <button
+                  type="button"
+                  onClick={() => onUpdateSettings({ modality: 'audio-only', soundActive: true })}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                    settings.modality === 'audio-only'
+                      ? 'border-[#1B3B2B] bg-white shadow-2xs text-[#1B3B2B] ring-1 ring-[#1B3B2B]'
+                      : 'border-[#DCE3DC] bg-[#EFF2EE]/70 text-[#5B6960] hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-xs text-[#17231D]">
+                    <span className="material-symbols-outlined text-[17px] text-[#1B3B2B]">headphones</span>
+                    <span>Solo Auditivo</span>
+                  </div>
+                  <div className="text-[10px] text-[#5B6960] leading-tight">Sin pelota ni distracción</div>
+                </button>
+
+                {/* 2. Visual + Audio */}
+                <button
+                  type="button"
+                  onClick={() => onUpdateSettings({ modality: 'both', soundActive: true })}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                    settings.modality === 'both'
+                      ? 'border-[#1B3B2B] bg-white shadow-2xs text-[#1B3B2B] ring-1 ring-[#1B3B2B]'
+                      : 'border-[#DCE3DC] bg-[#EFF2EE]/70 text-[#5B6960] hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-xs text-[#17231D]">
+                    <span className="material-symbols-outlined text-[17px] text-[#1B3B2B]">visibility</span>
+                    <span>Visual + Audio</span>
+                  </div>
+                  <div className="text-[10px] text-[#5B6960] leading-tight">Figura + sonido L/R</div>
+                </button>
+
+                {/* 3. Solo Visual */}
+                <button
+                  type="button"
+                  onClick={() => onUpdateSettings({ modality: 'visual-only', soundActive: false })}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                    settings.modality === 'visual-only'
+                      ? 'border-[#1B3B2B] bg-white shadow-2xs text-[#1B3B2B] ring-1 ring-[#1B3B2B]'
+                      : 'border-[#DCE3DC] bg-[#EFF2EE]/70 text-[#5B6960] hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-xs text-[#17231D]">
+                    <span className="material-symbols-outlined text-[17px] text-[#1B3B2B]">motion_mode</span>
+                    <span>Solo Visual</span>
+                  </div>
+                  <div className="text-[10px] text-[#5B6960] leading-tight">Silencioso</div>
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-2.5">
-              {Object.values(PRESET_TEMPLATES).map((tpl) => {
-                const isActive = activeTemplateId === tpl.id;
-                const pal = PALETTES[tpl.palette];
-                return (
-                  <div
-                    key={tpl.id}
-                    className={`p-3.5 rounded-xl border-2 transition-all flex flex-col gap-2.5 ${
-                      isActive
-                        ? 'border-[#1B3B2B] bg-[#FBF9F5] shadow-xs'
-                        : 'border-[#DCE3DC] bg-white hover:border-[#1B3B2B]/40'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
+            {/* SELECCIÓN DE FIGURAS (Solo si no es solo-auditivo) */}
+            {settings.modality !== 'audio-only' && (
+              <>
+                {/* Figuras & Siluetas Compactas (Círculo, Gota, Corazón, Rombo, Estrella) */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                      Figuras & Siluetas
+                    </label>
+                    <span className="text-[10px] text-neutral-400 font-normal">
+                      Formas clínicas sin distracción
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[
+                      { key: 'circle', label: 'Círculo' },
+                      { key: 'drop', label: 'Gota' },
+                      { key: 'heart', label: 'Corazón' },
+                      { key: 'diamond', label: 'Rombo' },
+                      { key: 'star', label: 'Estrella' }
+                    ].map((f) => {
+                      const isSel = settings.stimulus === f.key;
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          aria-pressed={isSel}
+                          onClick={() => onUpdateSettings({ stimulus: f.key as StimulusShape })}
+                          className={`h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all cursor-pointer ${
+                            isSel
+                              ? 'border-2 border-[#1B3B2B] bg-[#F1F5F2] shadow-xs'
+                              : 'border-[#DCE3DC] bg-white hover:border-[#A3B5A8] hover:bg-[#FBFDFB]'
+                          }`}
+                        >
+                          <div
+                            className="w-5 h-5 flex items-center justify-center mb-0.5"
+                            style={{ color: currentStimulusColor }}
+                          >
+                            {f.key === 'circle' && (
+                              <div
+                                className="w-3.5 h-3.5 rounded-full"
+                                style={{ backgroundColor: currentStimulusColor }}
+                              />
+                            )}
+                            {f.key === 'drop' && (
+                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                              </svg>
+                            )}
+                            {f.key === 'heart' && (
+                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                              </svg>
+                            )}
+                            {f.key === 'diamond' && (
+                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                                <path d="M12 2L2 12l10 10 10-10L12 2z" />
+                              </svg>
+                            )}
+                            {f.key === 'star' && (
+                              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                              </svg>
+                            )}
+                          </div>
                           <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: pal.primary }}
-                          />
-                          <span
-                            className={`font-display font-bold text-xs ${
-                              isActive ? 'text-[#1B3B2B]' : 'text-[#17231D]'
+                            className={`text-[11px] font-semibold leading-tight ${
+                              isSel ? 'text-[#17231D]' : 'text-[#5B6960]'
                             }`}
                           >
-                            {tpl.name}
+                            {f.label}
                           </span>
-                        </div>
-                        <p className="text-[11px] text-[#5B6960] mt-0.5 leading-relaxed">
-                          {tpl.id === 'trauma-agudo' &&
-                            'Suave atenuación somática. Ideal para estabilización y fases iniciales de reprocesamiento.'}
-                          {tpl.id === 'foco-nitido' &&
-                            'Láser continuo lineal para reactivar seguimiento visual en bloqueos o disociación.'}
-                          {tpl.id === 'hipersensibilidad' &&
-                            'Textura visual orgánica y bajo brillo. Adecuado para fotofobia o neurodivergencia.'}
-                          {tpl.id === 'alternancia-rapida' &&
-                            'Luces de borde con corte on/off binario para desensibilización bilateral contundente.'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => onApplyPreset(tpl)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 shadow-2xs transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-[#1B3B2B] text-white hover:bg-[#2A5B44]'
-                            : 'bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[#17231D]'
-                        }`}
-                      >
-                        {isActive ? 'Activa' : 'Cargar'}
-                      </button>
-                    </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#DCE3DC]/50">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {pal.name.split('·')[1]?.trim() || pal.name}
-                      </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {tpl.stimulus === 'circle'
-                          ? 'Esfera Sólida'
-                          : tpl.stimulus === 'laser'
-                          ? 'Haz Láser'
-                          : tpl.stimulus === 'led-bar'
-                          ? 'Barra LED'
-                          : 'Luces de Borde'}
-                      </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {TRAJECTORIES[tpl.trajectory]?.name} ({tpl.frequency.toFixed(2)} Hz)
-                      </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
-                        {tpl.soundType === 'heartbeat'
-                          ? 'Latido Somático'
-                          : tpl.soundType === 'tibetan'
-                          ? 'Cuenco Zen'
-                          : tpl.soundType === 'water'
-                          ? 'Gota de Loto'
-                          : 'Click Metrónomo'}
-                      </span>
+                {/* Estímulos Cinéticos Especiales */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-[#DCE3DC]/60">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                      Estímulos Cinéticos Especiales
+                    </label>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
+                      Láser, Barras y Bordes
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      aria-pressed={settings.stimulus === 'led-bar'}
+                      onClick={() => onUpdateSettings({ stimulus: 'led-bar' })}
+                      className="stim-card"
+                    >
+                      <div className="h-5 flex items-center justify-center mb-1">
+                        <svg fill="none" height="12" viewBox="0 0 68 12" width="58">
+                          <circle cx="6" cy="6" fill="#BCC5BD" r="2" />
+                          <circle cx="16" cy="6" fill="#BCC5BD" r="2" />
+                          <circle cx="26" cy="6" fill="#BCC5BD" r="2" />
+                          <circle cx="34" cy="6" fill={currentStimulusColor} r="3" />
+                          <circle cx="42" cy="6" fill="#BCC5BD" r="2" />
+                          <circle cx="52" cy="6" fill="#BCC5BD" r="2" />
+                        </svg>
+                      </div>
+                      <span className="stim-title text-xs font-semibold text-[#17231D]">Barra LED</span>
+                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Traslación continua</span>
+                    </button>
+
+                    <button
+                      aria-pressed={settings.stimulus === 'sweep'}
+                      onClick={() => onUpdateSettings({ stimulus: 'sweep' })}
+                      className="stim-card"
+                    >
+                      <div className="h-5 flex items-center justify-center mb-1">
+                        <svg fill="none" height="18" viewBox="0 0 40 18" width="36">
+                          <line stroke="#BCC5BD" strokeDasharray="2 2" strokeWidth="1.5" x1="8" x2="14" y1="9" y2="9" />
+                          <line stroke={currentStimulusColor} strokeLinecap="round" strokeWidth="2.2" x1="20" x2="20" y1="2" y2="16" />
+                          <line stroke="#BCC5BD" strokeDasharray="2 2" strokeWidth="1.5" x1="26" x2="32" y1="9" y2="9" />
+                        </svg>
+                      </div>
+                      <span className="stim-title text-xs font-semibold text-[#17231D]">Línea de barrido</span>
+                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Velocidad lineal</span>
+                    </button>
+
+                    <button
+                      aria-pressed={settings.stimulus === 'laser'}
+                      onClick={() => onUpdateSettings({ stimulus: 'laser' })}
+                      className="stim-card"
+                    >
+                      <div className="h-5 flex items-center justify-center mb-1">
+                        <svg fill="none" height="18" viewBox="0 0 40 18" width="36">
+                          <line stroke={currentStimulusColor} strokeLinecap="round" strokeWidth="2" x1="12" x2="26" y1="16" y2="4" />
+                          <circle cx="27" cy="4" fill={currentStimulusColor} r="2.5" />
+                        </svg>
+                      </div>
+                      <span className="stim-title text-xs font-semibold text-[#17231D]">Haz láser</span>
+                      <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Haz focal continuo</span>
+                    </button>
+
+                    <button
+                      aria-pressed={settings.stimulus === 'edges'}
+                      onClick={() => onUpdateSettings({ stimulus: 'edges' })}
+                      className="stim-card"
+                    >
+                      <div className="h-5 flex items-center justify-center mb-1">
+                        <svg fill="none" height="18" viewBox="0 0 44 18" width="38">
+                          <path d="M14 3C10 3 7 6 7 9C7 12 10 15 14 15V3Z" fill={currentStimulusColor} />
+                          <path d="M30 3C34 3 37 6 37 9C37 12 34 15 30 15V3Z" fill="#D3DDD5" />
+                        </svg>
+                      </div>
+                      <span className="stim-title text-xs font-semibold text-[#17231D]">Luces de borde</span>
+                      <span className="text-[9px] text-emerald-700 font-mono mt-0.5 font-semibold">Alternancia binaria</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* COLOR DE LA PELOTA / FIGURA */}
+                <div className="flex flex-col gap-2.5 pt-2 border-t border-[#DCE3DC]/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                      Color de la Figura
+                    </span>
+                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <span
+                        className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs"
+                        style={{ backgroundColor: currentStimulusColor }}
+                      />
+                      <span className="text-[#17231D] font-semibold">{currentStimulusColor}</span>
                     </div>
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {colorPresets.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => onUpdateSettings({ stimulusColor: c.hex })}
+                        className={`w-7 h-7 rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                          settings.stimulusColor === c.hex ? 'scale-115 ring-2 ring-[#1B3B2B] ring-offset-1' : 'hover:scale-105'
+                        }`}
+                        style={{ backgroundColor: c.hex, borderColor: '#DCE3DC' }}
+                        title={c.label}
+                      />
+                    ))}
+
+                    {/* Selector de color nativo */}
+                    <label
+                      className="w-7 h-7 rounded-xl border border-[#DCE3DC] bg-white flex items-center justify-center cursor-pointer hover:bg-[#EFF2EE] transition-all"
+                      title="Elegir color personalizado"
+                    >
+                      <input
+                        type="color"
+                        value={currentStimulusColor}
+                        onChange={(e) => onUpdateSettings({ stimulusColor: e.target.value })}
+                        className="sr-only"
+                      />
+                      <span className="material-symbols-outlined text-[15px] text-[#5B6960]">colorize</span>
+                    </label>
+
+                    {/* Botón reset a paleta */}
+                    {settings.stimulusColor && (
+                      <button
+                        type="button"
+                        onClick={() => onUpdateSettings({ stimulusColor: null })}
+                        className="text-[10px] text-[#5B6960] hover:text-[#17231D] px-2 py-1 rounded bg-[#EFF2EE] hover:bg-white border border-[#DCE3DC] transition-colors ml-auto cursor-pointer"
+                        title="Restablecer al color primario de la paleta activa"
+                      >
+                        Reset a Paleta
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* PARED TEÓRICA / RECORRIDO HORIZONTAL (%) */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-[#DCE3DC]/60">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                        Pared Teórica / Recorrido
+                      </span>
+                      <p className="text-[10px] text-[#5B6960]">Amplitud horizontal del barrido visual</p>
+                    </div>
+                    <span className="font-mono font-bold text-xs text-[#1B3B2B] bg-[#E8F0EB] px-2 py-0.5 rounded">
+                      {Math.round(settings.amplitude * 100)}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={50}
+                      max={98}
+                      value={Math.round(settings.amplitude * 100)}
+                      onChange={(e) => onUpdateSettings({ amplitude: parseInt(e.target.value, 10) / 100 })}
+                      className="w-full h-2 bg-[#EFF2EE] rounded-lg accent-[#1B3B2B] cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                    {[
+                      { label: '94% Amplio', val: 0.94 },
+                      { label: '85% Estándar', val: 0.85 },
+                      { label: '75% Medio', val: 0.75 },
+                      { label: '60% Reducido', val: 0.60 }
+                    ].map((p) => {
+                      const isSel = Math.round(settings.amplitude * 100) === Math.round(p.val * 100);
+                      return (
+                        <button
+                          key={p.val}
+                          type="button"
+                          onClick={() => onUpdateSettings({ amplitude: p.val })}
+                          className={`py-1 text-[10px] rounded-lg border font-mono transition-colors cursor-pointer text-center ${
+                            isSel
+                              ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] font-semibold'
+                              : 'bg-white text-[#5B6960] hover:bg-[#EFF2EE] border-[#DCE3DC]'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Calibre / Tamaño de la figura */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-[#DCE3DC]/60">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-medium text-[#5B6960]">Calibre / Tamaño</span>
+                    <span className="font-mono font-bold text-[#1B3B2B]">{settings.dotSize} px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={16}
+                    max={52}
+                    value={settings.dotSize}
+                    onChange={(e) => onUpdateSettings({ dotSize: parseInt(e.target.value, 10) })}
+                    className="w-full h-1.5 bg-[#EFF2EE] rounded-lg accent-[#1B3B2B] cursor-pointer"
+                  />
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {/* ========================================================= */}
+        {/* PESTAÑA 2: TRAYECTORIAS Y GUÍAS DE LIENZO                */}
+        {/* ========================================================= */}
+        {currentTab === 'traj' && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                11 Trayectorias Clínicas
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#EFF2EE] text-[#5B6960]">
+                Arranque central (0, 0)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5">
+              {(Object.keys(TRAJECTORIES) as TrajectoryType[]).map((tKey) => {
+                const def = TRAJECTORIES[tKey];
+                const isSel = settings.trajectory === tKey;
+                return (
+                  <button
+                    key={tKey}
+                    aria-pressed={isSel}
+                    onClick={() => onUpdateSettings({ trajectory: tKey })}
+                    className="traj-card"
+                  >
+                    <div className="h-6 flex items-center justify-center mb-1">
+                      {tKey === 'horizontal' && (
+                        <svg fill="none" height="12" viewBox="0 0 44 12" width="44">
+                          <line stroke="#2D3B32" strokeWidth="2" x1="6" x2="38" y1="6" y2="6" />
+                          <circle cx="6" cy="6" fill="#2D3B32" r="2.5" />
+                          <circle cx="38" cy="6" fill="#2D3B32" r="2.5" />
+                        </svg>
+                      )}
+                      {tKey === 'vertical' && (
+                        <svg fill="none" height="24" viewBox="0 0 20 24" width="20">
+                          <line stroke="#2D3B32" strokeWidth="2" x1="10" x2="10" y1="4" y2="20" />
+                          <circle cx="10" cy="4" fill="#2D3B32" r="2.5" />
+                          <circle cx="10" cy="20" fill="#2D3B32" r="2.5" />
+                        </svg>
+                      )}
+                      {tKey === 'diagonal' && (
+                        <svg fill="none" height="22" viewBox="0 0 38 22" width="38">
+                          <line stroke="#2D3B32" strokeWidth="2" x1="6" x2="32" y1="17" y2="5" />
+                          <circle cx="6" cy="17" fill="#2D3B32" r="2.5" />
+                          <circle cx="32" cy="5" fill="#2D3B32" r="2.5" />
+                        </svg>
+                      )}
+                      {tKey === 'alternate' && (
+                        <svg fill="none" height="12" viewBox="0 0 44 12" width="44">
+                          <circle cx="6" cy="6" fill="#2D3B32" r="3" />
+                          <line stroke="#2D3B32" strokeDasharray="3 3" strokeWidth="1.8" x1="13" x2="31" y1="6" y2="6" />
+                          <circle cx="38" cy="6" fill="none" r="3" stroke="#2D3B32" strokeWidth="1.8" />
+                        </svg>
+                      )}
+                      {tKey === 'infinity' && (
+                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                          <path
+                            d="M10 5C6 5 4 7.5 4 10C4 12.5 6 15 10 15C15 15 18 10 20 10C22 10 25 15 30 15C34 15 36 12.5 36 10C36 7.5 34 5 30 5C25 5 22 10 20 10C18 10 15 5 10 5Z"
+                            stroke="#2D3B32"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      )}
+                      {tKey === 'circular' && (
+                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                          <ellipse cx="20" cy="10" rx="14" ry="7" stroke="#2D3B32" strokeWidth="2" />
+                        </svg>
+                      )}
+                      {tKey === 'pendulum' && (
+                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                          <path d="M6 8C12 16 28 16 34 8" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
+                          <circle cx="6" cy="8" fill="#2D3B32" r="2.5" />
+                          <circle cx="34" cy="8" fill="#2D3B32" r="2.5" />
+                        </svg>
+                      )}
+                      {tKey === 'arc' && (
+                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                          <path d="M6 14C12 6 28 6 34 14" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
+                          <circle cx="6" cy="14" fill="#2D3B32" r="2.5" />
+                          <circle cx="34" cy="14" fill="#2D3B32" r="2.5" />
+                        </svg>
+                      )}
+                      {tKey === 'zigzag' && (
+                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40">
+                          <polyline
+                            points="5,15 12,5 20,15 28,5 35,15"
+                            stroke="#2D3B32"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      )}
+                      {tKey === 'bounce' && (
+                        <svg fill="none" height="20" viewBox="0 0 42 20" width="42">
+                          <path d="M5 14C8 6 15 6 19 14C23 6 30 6 37 14" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
+                        </svg>
+                      )}
+                      {tKey === 'smooth-random' && (
+                        <svg fill="none" height="20" viewBox="0 0 42 20" width="42">
+                          <path d="M6 13C10 13 12 7 17 8C22 9 24 5 29 7C34 9 34 5 36 6" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="traj-title text-xs font-semibold text-[#17231D]">{def.name}</span>
+                    <span className="text-[10px] text-neutral-400 font-normal mt-0.5">{def.badge}</span>
+                  </button>
                 );
               })}
             </div>
 
-            {/* Guardar plantilla personalizada */}
-            <div className="pt-3 border-t border-[#DCE3DC]/70 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#17231D] flex items-center gap-1.5 font-mono uppercase tracking-wide">
-                  <span className="material-symbols-outlined text-[16px] text-[#1B3B2B]">save</span>
-                  <span>Guardar Plantilla de Paciente</span>
-                </span>
-                <span className="text-[10px] text-[#5B6960] font-mono">Configuración actual</span>
-              </div>
-              <form onSubmit={handleSaveCustom} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ej. Paciente M. G. · Sesión 4"
-                  value={customNameInput}
-                  onChange={(e) => setCustomNameInput(e.target.value)}
-                  className="flex-1 text-xs px-3 py-2 bg-[#EFF2EE] border border-[#DCE3DC] rounded-xl focus:ring-1 focus:ring-[#1B3B2B] focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="px-3.5 py-2 bg-[#1B3B2B] hover:bg-[#2A5B44] text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1 shrink-0 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">bookmark_add</span>
-                  <span>Guardar</span>
-                </button>
-              </form>
+            {/* Opciones de Demarcación del Lienzo (Línea de guía y punto central) */}
+            <div className="flex flex-col gap-2.5 pt-3 border-t border-[#DCE3DC]/60">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                Demarcación del Lienzo
+              </span>
 
-              {/* Lista de plantillas personalizadas */}
-              <div className="flex flex-col gap-2">
-                {customTemplates.length === 0 ? (
-                  <div className="text-[11px] text-[#5B6960] italic">
-                    No hay perfiles personalizados guardados aún.
-                  </div>
-                ) : (
-                  customTemplates.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-2.5 rounded-xl border border-[#DCE3DC] bg-white flex items-center justify-between gap-2 shadow-2xs"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-semibold text-[#17231D] truncate">{item.name}</div>
-                        <div className="text-[10px] text-[#5B6960] font-mono truncate">
-                          Nvl {item.level} · {item.trajectory} · {item.stimulus}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => onApplyCustomTemplate(item)}
-                          className="px-2 py-0.5 rounded bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[11px] font-semibold transition-all cursor-pointer"
-                        >
-                          Cargar
-                        </button>
-                        <button
-                          onClick={() => onDeleteCustomTemplate(item.id)}
-                          className="text-[#5B6960] hover:text-red-600 p-1 text-xs cursor-pointer"
-                          title="Eliminar plantilla"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#EFF2EE]/70 border border-[#DCE3DC]/70">
+                <div>
+                  <div className="text-xs font-semibold text-[#17231D]">Línea Guía de Trayectoria</div>
+                  <div className="text-[10px] text-[#5B6960]">Camino punteado en el centro del eje</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.showGuideLine}
+                    onChange={(e) => onUpdateSettings({ showGuideLine: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1B3B2B]" />
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#EFF2EE]/70 border border-[#DCE3DC]/70">
+                <div>
+                  <div className="text-xs font-semibold text-[#17231D]">Punto Central de Reposo</div>
+                  <div className="text-[10px] text-[#5B6960]">Ancla neutral al centro del lienzo</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.showCenterAnchor}
+                    onChange={(e) => onUpdateSettings({ showCenterAnchor: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1B3B2B]" />
+                </label>
               </div>
             </div>
           </section>
         )}
 
-        {/* PESTAÑA 2: PALETAS */}
-        {activeTab === 'palettes' && (
+        {/* ========================================================= */}
+        {/* PESTAÑA 3: AUDIO BILATERAL L/R                            */}
+        {/* ========================================================= */}
+        {currentTab === 'audio' && (
+          <section className="flex flex-col gap-5">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[#EFF2EE] border border-[#DCE3DC]/80">
+              <div>
+                <div className="text-xs font-semibold text-[#17231D]">Audio Estéreo Bilateral L/R</div>
+                <div className="text-[11px] text-[#5B6960]">
+                  Panorámica auditiva sincronizada al golpear extremos
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.soundActive}
+                  onChange={(e) => onUpdateSettings({ soundActive: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1B3B2B]" />
+              </label>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                Timbre Acústico
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'heartbeat', icon: 'favorite', title: 'Latido Somático', desc: 'Grave orgánico' },
+                  { key: 'tibetan', icon: 'notifications', title: 'Cuenco Zen', desc: '440 Hz resonante' },
+                  { key: 'water', icon: 'water_drop', title: 'Gota de Loto', desc: 'Acuático sereno' },
+                  { key: 'click', icon: 'touch_app', title: 'Click Metrónomo', desc: 'Precisión seca' }
+                ].map((s) => {
+                  const isSel = settings.soundType === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      aria-pressed={isSel}
+                      onClick={() => {
+                        onUpdateSettings({ soundType: s.key as SoundType });
+                        audioEngine.playSound('L', s.key as SoundType, true);
+                      }}
+                      className="traj-card p-3 flex flex-row items-center gap-2.5 text-left transition-all cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[20px] text-[#1B3B2B]">{s.icon}</span>
+                      <div>
+                        <div className="text-xs font-semibold">{s.title}</div>
+                        <div className="text-[10px] text-[#5B6960]">{s.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={handleTestSound}
+                className="text-xs font-medium text-[#1B3B2B] bg-[#E8F0EB] hover:bg-[#E2ECE5] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[15px]">volume_up</span>
+                <span>Test L / R Inmediato</span>
+              </button>
+              <span className="text-[11px] text-[#5B6960] font-mono">WebAudio Pan Stereo</span>
+            </div>
+          </section>
+        )}
+
+        {/* ========================================================= */}
+        {/* PESTAÑA 4: PALETAS Y FONDOS                               */}
+        {/* ========================================================= */}
+        {currentTab === 'palettes' && (
           <section className="flex flex-col gap-4">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono mb-1">
                 Paletas Oficiales de Bilateral
               </h3>
               <p className="text-[11px] text-[#5B6960]">
-                Basadas en el sistema de diseño clínico: Salvia, Bruma marina y Lino orgánico.
+                Armonías de diseño clínico: Salvia, Bruma marina y Lino orgánico.
               </p>
             </div>
 
@@ -415,355 +859,161 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           </section>
         )}
 
-        {/* PESTAÑA 3: ESTÍMULOS */}
-        {activeTab === 'stimuli' && (
-          <section className="flex flex-col gap-5">
-            {/* Clásicos */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono flex items-center justify-between">
-                <span>Estímulos Clásicos (Movimiento Armónico)</span>
-                <span className="text-[10px] text-neutral-400 font-normal">Sin cambio de física</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  aria-pressed={settings.stimulus === 'circle'}
-                  onClick={() => onUpdateSettings({ stimulus: 'circle' })}
-                  className="stim-card"
-                >
-                  <span className="w-4 h-4 rounded-full bg-[#1B3B2B] mb-1.5" />
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Sólido</span>
-                </button>
-                <button
-                  aria-pressed={settings.stimulus === 'soft'}
-                  onClick={() => onUpdateSettings({ stimulus: 'soft' })}
-                  className="stim-card"
-                >
-                  <span className="w-4 h-4 rounded-full bg-[#1B3B2B] blur-[1.5px] mb-1.5" />
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Bruma</span>
-                </button>
-                <button
-                  aria-pressed={settings.stimulus === 'ring'}
-                  onClick={() => onUpdateSettings({ stimulus: 'ring' })}
-                  className="stim-card"
-                >
-                  <span className="w-4 h-4 rounded-full border-2 border-[#1B3B2B] mb-1.5" />
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Anillo</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Experimentales */}
-            <div className="flex flex-col gap-2 pt-2 border-t border-[#DCE3DC]/60">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px] text-[#2A5B44]">science</span>
-                  <span>Estímulos Experimentales</span>
-                </label>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
-                  Física Especial
+        {/* ========================================================= */}
+        {/* PESTAÑA 5: PLANTILLAS Y PERFILES                          */}
+        {/* ========================================================= */}
+        {currentTab === 'templates' && (
+          <section className="flex flex-col gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
+                  Plantillas Clínicas Preconfiguradas
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  EMDR Standard
                 </span>
               </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* Barra LED */}
-                <button
-                  aria-pressed={settings.stimulus === 'led-bar'}
-                  onClick={() => onUpdateSettings({ stimulus: 'led-bar' })}
-                  className="stim-card"
-                >
-                  <div className="h-6 flex items-center justify-center mb-1">
-                    <svg fill="none" height="12" viewBox="0 0 68 12" width="68" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="6" cy="6" fill="#BCC5BD" r="2" />
-                      <circle cx="16" cy="6" fill="#BCC5BD" r="2" />
-                      <circle cx="26" cy="6" fill="#BCC5BD" r="2" />
-                      <circle cx="34" cy="6" fill="#1B3B2B" r="3.2" />
-                      <circle cx="42" cy="6" fill="#BCC5BD" r="2" />
-                      <circle cx="52" cy="6" fill="#BCC5BD" r="2" />
-                      <circle cx="62" cy="6" fill="#BCC5BD" r="2" />
-                    </svg>
-                  </div>
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Barra LED</span>
-                  <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Traslación continua</span>
-                </button>
-
-                {/* Línea de barrido */}
-                <button
-                  aria-pressed={settings.stimulus === 'sweep'}
-                  onClick={() => onUpdateSettings({ stimulus: 'sweep' })}
-                  className="stim-card"
-                >
-                  <div className="h-6 flex items-center justify-center mb-1">
-                    <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
-                      <line stroke="#BCC5BD" strokeDasharray="2 2" strokeWidth="1.5" x1="8" x2="14" y1="10" y2="10" />
-                      <line stroke="#1B3B2B" strokeLinecap="round" strokeWidth="2.2" x1="20" x2="20" y1="2" y2="18" />
-                      <line stroke="#BCC5BD" strokeDasharray="2 2" strokeWidth="1.5" x1="26" x2="32" y1="10" y2="10" />
-                    </svg>
-                  </div>
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Línea de barrido</span>
-                  <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Velocidad lineal (sin ease)</span>
-                </button>
-
-                {/* Haz láser */}
-                <button
-                  aria-pressed={settings.stimulus === 'laser'}
-                  onClick={() => onUpdateSettings({ stimulus: 'laser' })}
-                  className="stim-card"
-                >
-                  <div className="h-6 flex items-center justify-center mb-1">
-                    <svg fill="none" height="22" viewBox="0 0 40 22" width="40" xmlns="http://www.w3.org/2000/svg">
-                      <line stroke="#1B3B2B" strokeLinecap="round" strokeWidth="2" x1="12" x2="26" y1="18" y2="6" />
-                      <circle cx="27" cy="5" fill="#BCC5BD" r="3.5" />
-                      <circle cx="27" cy="5" fill="#1B3B2B" r="1.8" />
-                    </svg>
-                  </div>
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Haz láser</span>
-                  <span className="text-[9px] text-neutral-400 font-mono mt-0.5">Haz focal continuo</span>
-                </button>
-
-                {/* Luces de borde */}
-                <button
-                  aria-pressed={settings.stimulus === 'edges'}
-                  onClick={() => onUpdateSettings({ stimulus: 'edges' })}
-                  className="stim-card"
-                >
-                  <div className="h-6 flex items-center justify-center mb-1">
-                    <svg fill="none" height="22" viewBox="0 0 50 22" width="50" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16 4C11.5 4 8 7.5 8 11C8 14.5 11.5 18 16 18V4Z" fill="#1B3B2B" />
-                      <path d="M34 4C38.5 4 42 7.5 42 11C42 14.5 38.5 18 34 18V4Z" fill="#D3DDD5" />
-                    </svg>
-                  </div>
-                  <span className="stim-title text-xs font-semibold text-[#17231D]">Luces de borde</span>
-                  <span className="text-[9px] text-emerald-700 font-mono mt-0.5 font-semibold">
-                    Alternancia On/Off binaria
-                  </span>
-                </button>
-              </div>
-
-              {/* Guía clínica de movimiento */}
-              <div className="p-3 bg-[#EFF2EE] rounded-xl border border-[#DCE3DC]/80 flex flex-col gap-1.5 text-xs text-[#5B6960] leading-relaxed">
-                <div className="font-semibold text-[#17231D] flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[15px] text-[#1B3B2B]">info</span>
-                  <span>Reglas de movimiento activadas:</span>
-                </div>
-                <ul className="list-disc pl-4 space-y-1 text-[11px]">
-                  <li>
-                    <strong className="text-[#17231D]">Traslación Continua Lineal (Barrido, Láser, Barra LED):</strong>{' '}
-                    Ping-pong a velocidad constante, cero aceleración en bordes (<code className="font-mono text-[#1B3B2B]">linear, sin ease</code>).
-                  </li>
-                  <li>
-                    <strong className="text-[#17231D]">Alternancia Binaria Instantánea (Luces de Borde):</strong>{' '}
-                    Aparece en extremo izquierdo, desaparece, y aparece en extremo derecho (<code className="font-mono text-[#1B3B2B]">On/Off instantáneo</code>).
-                  </li>
-                  <li>
-                    <strong className="text-[#17231D]">Pelota / Esfera Clásica:</strong> Mantiene la cinemática armónica tradicional.
-                  </li>
-                </ul>
-              </div>
+              <p className="text-[11px] text-[#5B6960]">
+                Protocolos clínicos optimizados para diferentes perfiles de paciente.
+              </p>
             </div>
 
-            {/* Calibre / Diámetro */}
-            <div className="flex flex-col gap-1.5 pt-2 border-t border-[#DCE3DC]/60">
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-[#5B6960]">Calibre / Grosor</span>
-                <span className="font-mono font-bold text-[#1B3B2B]">{settings.dotSize} px</span>
-              </div>
-              <input
-                type="range"
-                min={16}
-                max={52}
-                value={settings.dotSize}
-                onChange={(e) => onUpdateSettings({ dotSize: parseInt(e.target.value, 10) })}
-                className="w-full h-1.5 bg-[#EFF2EE] rounded-lg accent-[#1B3B2B] cursor-pointer"
-              />
-            </div>
-          </section>
-        )}
-
-        {/* PESTAÑA 4: TRAYECTORIAS */}
-        {activeTab === 'traj' && (
-          <section className="flex flex-col gap-3.5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
-                11 Trayectorias Clínicas
-              </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#EFF2EE] text-[#5B6960]">
-                Sincronizado
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2.5">
-              {(Object.keys(TRAJECTORIES) as TrajectoryType[]).map((tKey) => {
-                const def = TRAJECTORIES[tKey];
-                const isSel = settings.trajectory === tKey;
+            <div className="flex flex-col gap-2.5">
+              {Object.values(PRESET_TEMPLATES).map((tpl) => {
+                const isActive = activeTemplateId === tpl.id;
+                const pal = PALETTES[tpl.palette];
                 return (
-                  <button
-                    key={tKey}
-                    aria-pressed={isSel}
-                    onClick={() => onUpdateSettings({ trajectory: tKey })}
-                    className="traj-card"
+                  <div
+                    key={tpl.id}
+                    className={`p-3.5 rounded-xl border-2 transition-all flex flex-col gap-2.5 ${
+                      isActive
+                        ? 'border-[#1B3B2B] bg-[#FBF9F5] shadow-xs'
+                        : 'border-[#DCE3DC] bg-white hover:border-[#1B3B2B]/40'
+                    }`}
                   >
-                    <div className="h-6 flex items-center justify-center mb-1">
-                      {tKey === 'horizontal' && (
-                        <svg fill="none" height="12" viewBox="0 0 44 12" width="44" xmlns="http://www.w3.org/2000/svg">
-                          <line stroke="#2D3B32" strokeWidth="2" x1="6" x2="38" y1="6" y2="6" />
-                          <circle cx="6" cy="6" fill="#2D3B32" r="2.5" />
-                          <circle cx="38" cy="6" fill="#2D3B32" r="2.5" />
-                        </svg>
-                      )}
-                      {tKey === 'vertical' && (
-                        <svg fill="none" height="24" viewBox="0 0 20 24" width="20" xmlns="http://www.w3.org/2000/svg">
-                          <line stroke="#2D3B32" strokeWidth="2" x1="10" x2="10" y1="4" y2="20" />
-                          <circle cx="10" cy="4" fill="#2D3B32" r="2.5" />
-                          <circle cx="10" cy="20" fill="#2D3B32" r="2.5" />
-                        </svg>
-                      )}
-                      {tKey === 'diagonal' && (
-                        <svg fill="none" height="22" viewBox="0 0 38 22" width="38" xmlns="http://www.w3.org/2000/svg">
-                          <line stroke="#2D3B32" strokeWidth="2" x1="6" x2="32" y1="17" y2="5" />
-                          <circle cx="6" cy="17" fill="#2D3B32" r="2.5" />
-                          <circle cx="32" cy="5" fill="#2D3B32" r="2.5" />
-                        </svg>
-                      )}
-                      {tKey === 'alternate' && (
-                        <svg fill="none" height="12" viewBox="0 0 44 12" width="44" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="6" cy="6" fill="#2D3B32" r="3" />
-                          <line stroke="#2D3B32" strokeDasharray="3 3" strokeWidth="1.8" x1="13" x2="31" y1="6" y2="6" />
-                          <circle cx="38" cy="6" fill="none" r="3" stroke="#2D3B32" strokeWidth="1.8" />
-                        </svg>
-                      )}
-                      {tKey === 'infinity' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M10 5C6 5 4 7.5 4 10C4 12.5 6 15 10 15C15 15 18 10 20 10C22 10 25 15 30 15C34 15 36 12.5 36 10C36 7.5 34 5 30 5C25 5 22 10 20 10C18 10 15 5 10 5Z"
-                            stroke="#2D3B32"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: pal.primary }}
                           />
-                        </svg>
-                      )}
-                      {tKey === 'circular' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
-                          <ellipse cx="20" cy="10" rx="14" ry="7" stroke="#2D3B32" strokeWidth="2" />
-                        </svg>
-                      )}
-                      {tKey === 'pendulum' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M6 8C12 16 28 16 34 8" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
-                          <circle cx="6" cy="8" fill="#2D3B32" r="2.5" />
-                          <circle cx="34" cy="8" fill="#2D3B32" r="2.5" />
-                        </svg>
-                      )}
-                      {tKey === 'arc' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M6 14C12 6 28 6 34 14" stroke="#2D3B32" strokeLinecap="round" strokeWidth="2" />
-                          <circle cx="6" cy="14" fill="#2D3B32" r="2.5" />
-                          <circle cx="34" cy="14" fill="#2D3B32" r="2.5" />
-                        </svg>
-                      )}
-                      {tKey === 'zigzag' && (
-                        <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
-                          <polyline
-                            points="5,15 12,5 20,15 28,5 35,15"
-                            stroke="#2D3B32"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      )}
-                      {tKey === 'bounce' && (
-                        <svg fill="none" height="20" viewBox="0 0 42 20" width="42" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M5 14C8 6 15 6 19 14C23 6 30 6 37 14"
-                            stroke="#2D3B32"
-                            strokeLinecap="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      )}
-                      {tKey === 'smooth-random' && (
-                        <svg fill="none" height="20" viewBox="0 0 42 20" width="42" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M6 13C10 13 12 7 17 8C22 9 24 5 29 7C34 9 34 5 36 6"
-                            stroke="#2D3B32"
-                            strokeLinecap="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      )}
+                          <span
+                            className={`font-display font-bold text-xs ${
+                              isActive ? 'text-[#1B3B2B]' : 'text-[#17231D]'
+                            }`}
+                          >
+                            {tpl.name}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#5B6960] mt-0.5 leading-relaxed">
+                          {tpl.id === 'trauma-agudo' &&
+                            'Suave atenuación somática. Ideal para estabilización y fases iniciales.'}
+                          {tpl.id === 'foco-nitido' &&
+                            'Láser continuo lineal para reactivar seguimiento visual en bloqueos.'}
+                          {tpl.id === 'hipersensibilidad' &&
+                            'Textura visual orgánica y bajo brillo. Adecuado para fotofobia.'}
+                          {tpl.id === 'alternancia-rapida' &&
+                            'Luces de borde con corte on/off binario para desensibilización contundente.'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => onApplyPreset(tpl)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0 shadow-2xs transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#1B3B2B] text-white hover:bg-[#2A5B44]'
+                            : 'bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[#17231D]'
+                        }`}
+                      >
+                        {isActive ? 'Activa' : 'Cargar'}
+                      </button>
                     </div>
-                    <span className="traj-title text-xs font-semibold text-[#17231D]">{def.name}</span>
-                    <span className="text-[10px] text-neutral-400 font-normal mt-0.5">{def.badge}</span>
-                  </button>
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#DCE3DC]/50">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
+                        {pal.name.split('·')[1]?.trim() || pal.name}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
+                        {TRAJECTORIES[tpl.trajectory]?.name} ({tpl.frequency.toFixed(2)} Hz)
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#DCE3DC] text-[#17231D]">
+                        {tpl.soundType === 'heartbeat'
+                          ? 'Latido Somático'
+                          : tpl.soundType === 'tibetan'
+                          ? 'Cuenco Zen'
+                          : tpl.soundType === 'water'
+                          ? 'Gota de Loto'
+                          : 'Click Metrónomo'}
+                      </span>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          </section>
-        )}
 
-        {/* PESTAÑA 5: AUDIO BILATERAL */}
-        {activeTab === 'audio' && (
-          <section className="flex flex-col gap-5">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-[#EFF2EE] border border-[#DCE3DC]/80">
-              <div>
-                <div className="text-xs font-semibold text-[#17231D]">Audio Estéreo Bilateral L/R</div>
-                <div className="text-[11px] text-[#5B6960]">
-                  Panorámica auditiva sincronizada al golpear extremos
-                </div>
+            {/* Guardar plantilla personalizada */}
+            <div className="pt-3 border-t border-[#DCE3DC]/70 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#17231D] flex items-center gap-1.5 font-mono uppercase tracking-wide">
+                  <span className="material-symbols-outlined text-[16px] text-[#1B3B2B]">save</span>
+                  <span>Guardar Plantilla de Paciente</span>
+                </span>
+                <span className="text-[10px] text-[#5B6960] font-mono">Configuración actual</span>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <form onSubmit={handleSaveCustom} className="flex gap-2">
                 <input
-                  type="checkbox"
-                  checked={settings.soundActive}
-                  onChange={(e) => onUpdateSettings({ soundActive: e.target.checked })}
-                  className="sr-only peer"
+                  type="text"
+                  placeholder="Ej. Paciente M. G. · Sesión 4"
+                  value={customNameInput}
+                  onChange={(e) => setCustomNameInput(e.target.value)}
+                  className="flex-1 text-xs px-3 py-2 bg-[#EFF2EE] border border-[#DCE3DC] rounded-xl focus:ring-1 focus:ring-[#1B3B2B] focus:outline-none"
                 />
-                <div className="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1B3B2B]" />
-              </label>
-            </div>
+                <button
+                  type="submit"
+                  className="px-3.5 py-2 bg-[#1B3B2B] hover:bg-[#2A5B44] text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1 shrink-0 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">bookmark_add</span>
+                  <span>Guardar</span>
+                </button>
+              </form>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#5B6960] font-mono">
-                Timbre Acústico
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'heartbeat', icon: 'favorite', title: 'Latido Somático', desc: 'Grave orgánico' },
-                  { key: 'tibetan', icon: 'notifications', title: 'Cuenco Zen', desc: '440 Hz resonante' },
-                  { key: 'water', icon: 'water_drop', title: 'Gota de Loto', desc: 'Acuático sereno' },
-                  { key: 'click', icon: 'touch_app', title: 'Click Metrónomo', desc: 'Precisión seca' }
-                ].map((s) => {
-                  const isSel = settings.soundType === s.key;
-                  return (
-                    <button
-                      key={s.key}
-                      aria-pressed={isSel}
-                      onClick={() => {
-                        onUpdateSettings({ soundType: s.key as SoundType });
-                        audioEngine.playSound('L', s.key as SoundType, true);
-                      }}
-                      className="traj-card p-3 flex flex-row items-center gap-2.5 text-left transition-all cursor-pointer"
+              {/* Lista de plantillas personalizadas */}
+              <div className="flex flex-col gap-2">
+                {customTemplates.length === 0 ? (
+                  <div className="text-[11px] text-[#5B6960] italic">
+                    No hay perfiles personalizados guardados aún.
+                  </div>
+                ) : (
+                  customTemplates.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-2.5 rounded-xl border border-[#DCE3DC] bg-white flex items-center justify-between gap-2 shadow-2xs"
                     >
-                      <span className="material-symbols-outlined text-[20px] text-[#1B3B2B]">{s.icon}</span>
-                      <div>
-                        <div className="text-xs font-semibold">{s.title}</div>
-                        <div className="text-[10px] text-[#5B6960]">{s.desc}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-[#17231D] truncate">{item.name}</div>
+                        <div className="text-[10px] text-[#5B6960] font-mono truncate">
+                          Nvl {item.level} · {item.trajectory} · {item.stimulus}
+                        </div>
                       </div>
-                    </button>
-                  );
-                })}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onApplyCustomTemplate(item)}
+                          className="px-2 py-0.5 rounded bg-[#EFF2EE] hover:bg-[#1B3B2B] hover:text-white text-[11px] font-semibold transition-all cursor-pointer"
+                        >
+                          Cargar
+                        </button>
+                        <button
+                          onClick={() => onDeleteCustomTemplate(item.id)}
+                          className="text-[#5B6960] hover:text-red-600 p-1 text-xs cursor-pointer"
+                          title="Eliminar plantilla"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <button
-                onClick={handleTestSound}
-                className="text-xs font-medium text-[#1B3B2B] bg-[#E8F0EB] hover:bg-[#E2ECE5] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[15px]">volume_up</span>
-                <span>Test L / R Inmediato</span>
-              </button>
-              <span className="text-[11px] text-[#5B6960] font-mono">WebAudio Pan Stereo</span>
             </div>
           </section>
         )}

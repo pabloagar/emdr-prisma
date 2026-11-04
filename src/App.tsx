@@ -59,6 +59,7 @@ export const App: React.FC = () => {
 
   // Modales y paneles
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [sidebarTab, setSidebarTab] = useState<'stimuli' | 'traj' | 'audio' | 'palettes' | 'templates'>('stimuli');
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
   const [isRemoteModalOpen, setIsRemoteModalOpen] = useState<boolean>(false);
   const [showDisconnectedOverlay, setShowDisconnectedOverlay] = useState<boolean>(false);
@@ -319,19 +320,21 @@ export const App: React.FC = () => {
       {!isPatient && (
         <TherapistHeader
           roomId={credentials?.roomId || roomId}
-          palette={currentPaletteDef}
           timerFormatted={formatTimer(timerSeconds)}
           onResetTimer={handleResetTimer}
           syncStatus={syncStatus}
           peerConnected={peerConnected}
-          latencyMs={latencyMs}
-          activeTemplateName={activeTemplateName}
-          onOpenTemplates={() => setIsSidebarOpen(true)}
-          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          onOpenTemplates={() => {
+            setSidebarTab('templates');
+            setIsSidebarOpen(true);
+          }}
+          onToggleSidebar={() => {
+            setSidebarTab('stimuli');
+            setIsSidebarOpen((prev) => !prev);
+          }}
           isSidebarOpen={isSidebarOpen}
           onOpenReport={() => setIsReportModalOpen(true)}
           onOpenRemoteModal={() => setIsRemoteModalOpen(true)}
-          onCreateRoom={createRoom}
         />
       )}
 
@@ -365,10 +368,13 @@ export const App: React.FC = () => {
             onLevelChange={handleLevelChange}
             activeTrajectory={settings.trajectory}
             onSelectTrajectory={(t) => handleUpdateSettings({ trajectory: t })}
+            modality={settings.modality}
+            soundType={settings.soundType}
+            onSelectSound={(s) => handleUpdateSettings({ soundType: s })}
           />
         )}
 
-        {/* Panel lateral "Configuración Total" */}
+        {/* Panel lateral "Ajustes de Sesión" */}
         {!isPatient && (
           <ConfigSidebar
             isOpen={isSidebarOpen}
@@ -381,6 +387,8 @@ export const App: React.FC = () => {
             onSaveCustomTemplate={handleSaveCustomTemplate}
             onDeleteCustomTemplate={handleDeleteCustomTemplate}
             onApplyCustomTemplate={handleApplyCustomTemplate}
+            activeTab={sidebarTab}
+            onTabChange={setSidebarTab}
           />
         )}
       </main>

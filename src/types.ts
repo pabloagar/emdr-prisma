@@ -11,14 +11,18 @@ export type TrajectoryType =
   | 'bounce'
   | 'smooth-random';
 
-export type StimulusType =
+export type StimulusShape =
   | 'circle'
-  | 'soft'
-  | 'ring'
+  | 'drop'
+  | 'heart'
+  | 'diamond'
+  | 'star'
   | 'led-bar'
   | 'sweep'
   | 'laser'
   | 'edges';
+
+export type StimulationModality = 'both' | 'audio-only' | 'visual-only';
 
 export type SoundType = 'heartbeat' | 'tibetan' | 'water' | 'click';
 
@@ -39,7 +43,9 @@ export interface SessionSettings {
   level: number;
   frequency: number;
   trajectory: TrajectoryType;
-  stimulus: StimulusType;
+  stimulus: StimulusShape;
+  stimulusColor: string | null;
+  modality: StimulationModality;
   soundActive: boolean;
   soundType: SoundType;
   dotSize: number;
@@ -47,6 +53,8 @@ export interface SessionSettings {
   bg: string;
   amplitude: number;
   posY: 'top' | 'center' | 'bottom';
+  showGuideLine: boolean;
+  showCenterAnchor: boolean;
 }
 
 export interface PresetTemplate {
@@ -54,7 +62,9 @@ export interface PresetTemplate {
   name: string;
   palette: PaletteKey;
   bg: string;
-  stimulus: StimulusType;
+  stimulus: StimulusShape;
+  stimulusColor?: string | null;
+  modality?: StimulationModality;
   dotSize: number;
   trajectory: TrajectoryType;
   level: number;
@@ -69,12 +79,15 @@ export interface CustomTemplate {
   name: string;
   palette: PaletteKey;
   bg: string;
-  stimulus: StimulusType;
+  stimulus: StimulusShape;
+  stimulusColor?: string | null;
+  modality?: StimulationModality;
   dotSize: number;
   trajectory: TrajectoryType;
   level: number;
   soundActive: boolean;
   soundType: SoundType;
+  amplitude?: number;
   createdAt?: number;
 }
 

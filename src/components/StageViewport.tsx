@@ -32,52 +32,78 @@ export const StageViewport: React.FC<StageViewportProps> = ({
   const [activeSide, setActiveSide] = useState<'L' | 'R' | null>(null);
   const [currentPos, setCurrentPos] = useState({ fx: 0.5, fy: 0.5, nx: 0, ny: 0, lat: 0 });
 
+  const currentPosRef = useRef({ fx: 0.5, fy: 0.5, nx: 0, ny: 0, lat: 0 });
   const animIdRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
   const lastSideRef = useRef<'left' | 'right' | 'center'>('center');
-  const stopProgressRef = useRef(0);
-  const stopStartPosRef = useRef({ nx: 0, ny: 0 });
+
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  const onPassIncrementRef = useRef(onPassIncrement);
+  onPassIncrementRef.current = onPassIncrement;
+
+  const onSmoothStopFinishedRef = useRef(onSmoothStopFinished);
+  onSmoothStopFinishedRef.current = onSmoothStopFinished;
+
+  // Acumulador continuo de fase
+  const phaseRef = useRef<number>(0);
+  const startEntranceProgressRef = useRef<number>(1);
+
+  // Control estricto de paro suave (sin reseteos accidentales)
+  const wasStoppingRef = useRef<boolean>(false);
+  const stopProgressRef = useRef<number>(0);
+  const stopStartPosRef = useRef<{ nx: number; ny: number }>({ nx: 0, ny: 0 });
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
-  const getEffectiveKinetics = useCallback(() => {
-    if (settings.stimulus === 'edges') return 'binary-instant';
-    if (['sweep', 'laser', 'led-bar'].includes(settings.stimulus)) return 'linear-pingpong';
-    return 'harmonic-classic';
-  }, [settings.stimulus]);
+  const getCenterFrac = (posY: 'top' | 'center' | 'bottom') => {
+    return posY === 'top' ? 0.32 : posY === 'bottom' ? 0.68 : 0.5;
+  };
 
   const centerFrac = useCallback(() => {
-    return settings.posY === 'top' ? 0.32 : settings.posY === 'bottom' ? 0.68 : 0.5;
+    return getCenterFrac(settings.posY);
   }, [settings.posY]);
 
-  // Posición de paro suave
-  useEffect(() => {
-    if (isStoppingSmoothly) {
-      stopProgressRef.current = 0;
-      stopStartPosRef.current = { nx: currentPos.nx, ny: currentPos.ny };
-    }
-  }, [isStoppingSmoothly, currentPos.nx, currentPos.ny]);
+  // Color efectivo del estímulo (personalizado o de la paleta)
+  const stimulusColor = settings.stimulusColor || palette.primary;
 
-  // Reset al iniciar o detener
+  // Al solicitar pausa suave, registrar posición de origen UNA SOLA VEZ
+  useEffect(() => {
+    if (isStoppingSmoothly && !wasStoppingRef.current) {
+      stopProgressRef.current = 0;
+      stopStartPosRef.current = {
+        nx: currentPosRef.current.nx,
+        ny: currentPosRef.current.ny
+      };
+    }
+    wasStoppingRef.current = isStoppingSmoothly;
+  }, [isStoppingSmoothly]);
+
+  // Al iniciar, arrancar desde el centro (0, 0)
   useEffect(() => {
     if (isPlaying && !isStoppingSmoothly) {
-      startTimeRef.current = null;
+      phaseRef.current = 0;
+      startEntranceProgressRef.current = 0;
       lastTimestampRef.current = null;
+      lastSideRef.current = 'center';
     }
   }, [isPlaying, isStoppingSmoothly]);
 
-  // Loop de animación principal
+  // Bucle de animación continuo y suave
   useEffect(() => {
     if (!isPlaying && !isStoppingSmoothly) {
-      if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
+      if (animIdRef.current) {
+        cancelAnimationFrame(animIdRef.current);
+        animIdRef.current = null;
+      }
       return;
     }
 
     const render = (timestamp: number) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const s = settingsRef.current;
       if (!lastTimestampRef.current) lastTimestampRef.current = timestamp;
-      const delta = (timestamp - lastTimestampRef.current) / 1000;
+      const delta = Math.min((timestamp - lastTimestampRef.current) / 1000, 0.06);
       lastTimestampRef.current = timestamp;
 
       let nx = 0;
@@ -86,10 +112,17 @@ export const StageViewport: React.FC<StageViewportProps> = ({
       let thr = 0.88;
 
       if (isStoppingSmoothly) {
-        stopProgressRef.current += delta * 1.5;
+        // Desaceleración gradual al centro (dura aprox 0.85s)
+        stopProgressRef.current += delta * 1.2;
         if (stopProgressRef.current >= 1) {
-          setCurrentPos({ fx: 0.5, fy: centerFrac(), nx: 0, ny: 0, lat: 0 });
-          onSmoothStopFinished();
+          nx = 0;
+          ny = 0;
+          lat = 0;
+          const cy = getCenterFrac(s.posY);
+          const finalPos = { fx: 0.5, fy: cy, nx: 0, ny: 0, lat: 0 };
+          currentPosRef.current = finalPos;
+          setCurrentPos(finalPos);
+          onSmoothStopFinishedRef.current();
           return;
         } else {
           const ease = 1 - Math.pow(1 - stopProgressRef.current, 3);
@@ -98,53 +131,59 @@ export const StageViewport: React.FC<StageViewportProps> = ({
           lat = nx;
         }
       } else {
-        const elapsed = (timestamp - startTimeRef.current) / 1000;
-        const kinetics = getEffectiveKinetics();
-        const cycle = 2 * Math.PI * settings.frequency * elapsed;
+        // Acumular fase continuamente para que cambiar velocidad no dé saltos
+        phaseRef.current += delta * s.frequency * 2 * Math.PI;
+        const cycle = phaseRef.current;
 
-        if (kinetics === 'binary-instant') {
+        // Rampa suave de arranque desde centro
+        startEntranceProgressRef.current = Math.min(1, startEntranceProgressRef.current + delta * 2.5);
+        const entranceEase = 1 - Math.pow(1 - startEntranceProgressRef.current, 2);
+
+        if (s.stimulus === 'edges') {
           const phase = Math.sin(cycle);
           nx = phase >= 0 ? 1 : -1;
           ny = 0;
           lat = nx;
           thr = 0.5;
-        } else if (kinetics === 'linear-pingpong') {
-          const p = (settings.frequency * elapsed) % 1;
-          const tri = p < 0.5 ? p * 4 - 1 : 3 - p * 4;
-          nx = tri;
+        } else if (['sweep', 'laser', 'led-bar'].includes(s.stimulus)) {
+          const normPhase = ((cycle / (2 * Math.PI)) % 1 + 1) % 1;
+          const tri = normPhase < 0.5 ? normPhase * 4 - 1 : 3 - normPhase * 4;
+          nx = tri * entranceEase;
           ny = 0;
           lat = nx;
           thr = 0.95;
         } else {
-          const T = TRAJECTORIES[settings.trajectory] || TRAJECTORIES.horizontal;
+          const T = TRAJECTORIES[s.trajectory] || TRAJECTORIES.horizontal;
           const r = T.fn(cycle);
-          nx = r[0];
-          ny = r[1];
+          nx = r[0] * entranceEase;
+          ny = r[1] * entranceEase;
           lat = r.length > 2 && r[2] !== undefined ? r[2] : T.axis === 'y' ? r[1] : r[0];
           thr = 0.88;
         }
       }
 
-      const cy = centerFrac();
-      const fx = clamp(0.5 + nx * 0.5 * settings.amplitude, 0.03, 0.97);
+      const cy = getCenterFrac(s.posY);
+      const fx = clamp(0.5 + nx * 0.5 * s.amplitude, 0.02, 0.98);
       const fy = clamp(cy + ny * 0.38, 0.05, 0.95);
 
-      setCurrentPos({ fx, fy, nx, ny, lat });
+      const nextPos = { fx, fy, nx, ny, lat };
+      currentPosRef.current = nextPos;
+      setCurrentPos(nextPos);
 
-      // Detección L/R y Audio
-      if (!isStoppingSmoothly) {
+      // Detección L/R y Audio estéreo (suena tanto en modo visual como en solo-auditivo)
+      if (!isStoppingSmoothly && s.modality !== 'visual-only') {
         if (lat <= -thr && lastSideRef.current !== 'left') {
           lastSideRef.current = 'left';
-          onPassIncrement();
+          onPassIncrementRef.current();
           setActiveSide('L');
-          audioEngine.playSound('L', settings.soundType, settings.soundActive);
-          setTimeout(() => setActiveSide(null), 130);
+          audioEngine.playSound('L', s.soundType, s.soundActive);
+          setTimeout(() => setActiveSide(null), 120);
         } else if (lat >= thr && lastSideRef.current !== 'right') {
           lastSideRef.current = 'right';
-          onPassIncrement();
+          onPassIncrementRef.current();
           setActiveSide('R');
-          audioEngine.playSound('R', settings.soundType, settings.soundActive);
-          setTimeout(() => setActiveSide(null), 130);
+          audioEngine.playSound('R', s.soundType, s.soundActive);
+          setTimeout(() => setActiveSide(null), 120);
         }
       }
 
@@ -154,24 +193,14 @@ export const StageViewport: React.FC<StageViewportProps> = ({
     animIdRef.current = requestAnimationFrame(render);
 
     return () => {
-      if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
+      if (animIdRef.current) {
+        cancelAnimationFrame(animIdRef.current);
+        animIdRef.current = null;
+      }
     };
-  }, [
-    isPlaying,
-    isStoppingSmoothly,
-    settings.frequency,
-    settings.trajectory,
-    settings.stimulus,
-    settings.amplitude,
-    settings.soundActive,
-    settings.soundType,
-    centerFrac,
-    getEffectiveKinetics,
-    onPassIncrement,
-    onSmoothStopFinished
-  ]);
+  }, [isPlaying, isStoppingSmoothly]);
 
-  // Dibujar Canvas Láser cuando se use el estímulo 'laser'
+  // Dibujar Canvas Láser (solo si modalidad no es audio-only)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -190,12 +219,12 @@ export const StageViewport: React.FC<StageViewportProps> = ({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
 
-    if (settings.stimulus === 'laser') {
+    if (settings.modality !== 'audio-only' && settings.stimulus === 'laser') {
       const ox = W * 0.5;
       const oy = H * 0.04;
       const tx = currentPos.fx * W;
       const ty = currentPos.fy * H;
-      const col = palette.primary;
+      const col = stimulusColor;
 
       ctx.save();
       ctx.strokeStyle = col;
@@ -220,35 +249,62 @@ export const StageViewport: React.FC<StageViewportProps> = ({
       ctx.fill();
       ctx.restore();
     }
-  }, [currentPos, settings.stimulus, settings.dotSize, palette.primary]);
+  }, [currentPos, settings.stimulus, settings.dotSize, settings.modality, stimulusColor]);
 
-  // Etiqueta de estado
-  let statusText = 'En Reposo';
-  let statusClass = 'w-2 h-2 rounded-full bg-neutral-400';
-  let statusPillClass =
-    'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/5 text-[#17231D] border border-black/5';
+  const isAudioOnly = settings.modality === 'audio-only';
+  const isExperimental = ['led-bar', 'sweep', 'laser', 'edges'].includes(settings.stimulus);
 
-  if (isPlaying && !isStoppingSmoothly) {
-    statusText = 'Estimulando';
-    statusClass = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
-    statusPillClass =
-      'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-900 border border-emerald-200/60 shadow-xs';
-  } else if (isStoppingSmoothly) {
-    statusText = 'Retornando al centro...';
-    statusClass = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
-    statusPillClass =
-      'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/60 shadow-xs';
-  }
+  // Renderizador de figuras geométricas y siluetas
+  const renderShapeContent = () => {
+    const col = stimulusColor;
 
-  const kineticsDescription =
-    settings.stimulus === 'edges'
-      ? 'Binario On/Off instantáneo'
-      : ['sweep', 'laser', 'led-bar'].includes(settings.stimulus)
-      ? 'Traslación continua lineal (ping-pong)'
-      : `${TRAJECTORIES[settings.trajectory]?.name || 'Horizontal'} armónico`;
-
-  const isClassicBall =
-    settings.stimulus === 'circle' || settings.stimulus === 'soft' || settings.stimulus === 'ring';
+    switch (settings.stimulus) {
+      case 'circle':
+        return (
+          <div
+            className="w-full h-full rounded-full shadow-xs"
+            style={{ backgroundColor: col }}
+          />
+        );
+      case 'drop':
+        return (
+          <svg viewBox="0 0 24 24" className="w-full h-full drop-shadow-xs" style={{ color: col }}>
+            <path fill="currentColor" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+          </svg>
+        );
+      case 'heart':
+        return (
+          <svg viewBox="0 0 24 24" className="w-full h-full drop-shadow-xs" style={{ color: col }}>
+            <path
+              fill="currentColor"
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            />
+          </svg>
+        );
+      case 'diamond':
+        return (
+          <svg viewBox="0 0 24 24" className="w-full h-full drop-shadow-xs" style={{ color: col }}>
+            <path fill="currentColor" d="M12 2L2 12l10 10 10-10L12 2z" />
+          </svg>
+        );
+      case 'star':
+        return (
+          <svg viewBox="0 0 24 24" className="w-full h-full drop-shadow-xs" style={{ color: col }}>
+            <path
+              fill="currentColor"
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            />
+          </svg>
+        );
+      default:
+        return (
+          <div
+            className="w-full h-full rounded-full shadow-xs"
+            style={{ backgroundColor: col }}
+          />
+        );
+    }
+  };
 
   return (
     <div
@@ -261,39 +317,70 @@ export const StageViewport: React.FC<StageViewportProps> = ({
         if (!isAudioUnlocked) onAudioUnlock();
       }}
     >
-      {/* Micro-barra superior del lienzo */}
+      {/* Micro-barra superior del lienzo (Minimalista y Limpia) */}
       <div className="absolute top-0 inset-x-0 h-10 px-4 flex items-center justify-between text-xs z-20 pointer-events-none select-none">
         <div className="flex items-center gap-2 pointer-events-auto">
-          <div className={statusPillClass}>
-            <span className={statusClass}></span>
-            <span>{statusText}</span>
+          {/* Indicador de estado discreto */}
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/5 text-[#17231D]/80 border border-black/5">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isPlaying && !isStoppingSmoothly
+                  ? 'bg-emerald-500 animate-ping'
+                  : isStoppingSmoothly
+                  ? 'bg-amber-500 animate-pulse'
+                  : 'bg-neutral-400'
+              }`}
+            />
+            <span>
+              {isAudioOnly ? (
+                isPlaying && !isStoppingSmoothly ? (
+                  'Audio Bilateral Activo'
+                ) : isStoppingSmoothly ? (
+                  'Pausando audio...'
+                ) : (
+                  'Audio en Reposo'
+                )
+              ) : isPlaying && !isStoppingSmoothly ? (
+                'Estimulando'
+              ) : isStoppingSmoothly ? (
+                'Volviendo al centro...'
+              ) : (
+                'En reposo'
+              )}
+            </span>
           </div>
-          <span className="text-neutral-400 text-xs hidden sm:inline">·</span>
-          <span className="text-neutral-600 font-mono text-[11px] hidden sm:inline">
-            {TRAJECTORIES[settings.trajectory]?.name || 'Horizontal'} (
-            {TRAJECTORIES[settings.trajectory]?.badge || 'estándar'})
-          </span>
-          <span className="text-neutral-400 text-xs hidden sm:inline">·</span>
-          <span className="text-neutral-700 font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/5 hidden md:inline">
-            {kineticsDescription}
-          </span>
+
+          {!isAudioOnly && (
+            <>
+              <span className="text-neutral-400 text-xs hidden sm:inline">·</span>
+              <span className="text-neutral-500 text-[11px] font-medium hidden sm:inline">
+                {TRAJECTORIES[settings.trajectory]?.name || 'Horizontal'}
+              </span>
+            </>
+          )}
+
+          {isAudioOnly && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Modo Solo Auditivo
+            </span>
+          )}
         </div>
 
         {/* Indicador estéreo L / R */}
         <div className="flex items-center gap-1 font-mono text-[10px] font-semibold text-neutral-400 pointer-events-auto">
           <span
-            className="w-6 h-5 rounded flex items-center justify-center transition-all duration-100"
+            className="w-5 h-5 rounded flex items-center justify-center transition-all duration-100"
             style={{
-              backgroundColor: activeSide === 'L' ? palette.primary : 'rgba(0,0,0,0.06)',
+              backgroundColor: activeSide === 'L' ? stimulusColor : 'rgba(0,0,0,0.06)',
               color: activeSide === 'L' ? '#FFFFFF' : 'inherit'
             }}
           >
             L
           </span>
           <span
-            className="w-6 h-5 rounded flex items-center justify-center transition-all duration-100"
+            className="w-5 h-5 rounded flex items-center justify-center transition-all duration-100"
             style={{
-              backgroundColor: activeSide === 'R' ? palette.primary : 'rgba(0,0,0,0.06)',
+              backgroundColor: activeSide === 'R' ? stimulusColor : 'rgba(0,0,0,0.06)',
               color: activeSide === 'R' ? '#FFFFFF' : 'inherit'
             }}
           >
@@ -304,123 +391,196 @@ export const StageViewport: React.FC<StageViewportProps> = ({
 
       {/* Escenario Activo */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
-        {/* Guía horizontal y ancla de centro */}
-        <div
-          className="absolute inset-x-8 -translate-y-1/2 h-[1px] border-b border-dashed border-[#1B3B2B]/15 pointer-events-none"
-          style={{ top: `${centerFrac() * 100}%` }}
-        />
-        <div
-          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full pointer-events-none transition-opacity duration-300"
-          style={{
-            top: `${centerFrac() * 100}%`,
-            backgroundColor: `${palette.primary}40`,
-            opacity: isPlaying && !isStoppingSmoothly ? 0 : 1
-          }}
-        />
-
-        {/* Canvas FX para láser */}
-        <canvas ref={canvasRef} className="fx-canvas" />
-
-        {/* Barra LED (15 puntos cinéticos) */}
-        {settings.stimulus === 'led-bar' && (
+        {/* Guía horizontal opcional */}
+        {settings.showGuideLine && !isAudioOnly && (
           <div
-            className="led-bar-track"
+            className="absolute -translate-y-1/2 h-[1px] border-b border-dashed border-[#1B3B2B]/20 pointer-events-none transition-all duration-300"
             style={{
               top: `${centerFrac() * 100}%`,
               left: `${(1 - settings.amplitude) * 50}%`,
               right: `${(1 - settings.amplitude) * 50}%`
             }}
-          >
-            {Array.from({ length: 15 }).map((_, idx) => {
-              const normIdx = ((currentPos.nx + 1) / 2) * 14;
-              const dist = Math.abs(idx - normIdx);
-              let bg = 'rgba(0,0,0,0.12)';
-              let scale = 'scale(1)';
-              let shadow = 'none';
-              let opacity = 1;
+          />
+        )}
 
-              if (dist < 0.75) {
-                bg = palette.primary;
-                scale = 'scale(1.45)';
-                shadow = `0 0 12px ${palette.primary}`;
-              } else if (dist < 1.6) {
-                bg = palette.primary;
-                opacity = 0.35;
-                scale = 'scale(1.08)';
-              }
+        {/* Punto central discreto */}
+        {settings.showCenterAnchor && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none transition-opacity duration-300"
+            style={{
+              top: `${centerFrac() * 100}%`,
+              backgroundColor: `${stimulusColor}35`,
+              opacity: isPlaying && !isStoppingSmoothly && !isAudioOnly ? 0 : 0.6
+            }}
+          />
+        )}
 
-              return (
-                <div
-                  key={idx}
-                  className="led-bar-dot"
+        {/* Canvas FX para láser */}
+        <canvas ref={canvasRef} className="fx-canvas" />
+
+        {/* MODO SOLO AUDITIVO: Vista serena y limpia con pulsos bilaterales L/R suaves */}
+        {isAudioOnly && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-4">
+            <div className="relative flex items-center justify-center mb-3">
+              {/* Pulso Izquierdo */}
+              <div
+                className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-150 mr-2 ${
+                  activeSide === 'L' ? 'scale-125 opacity-100 shadow-md' : 'scale-95 opacity-25'
+                }`}
+                style={{
+                  borderColor: stimulusColor,
+                  backgroundColor: activeSide === 'L' ? `${stimulusColor}15` : 'transparent'
+                }}
+              >
+                <span className="font-mono text-xs font-bold" style={{ color: stimulusColor }}>L</span>
+              </div>
+
+              {/* Centro: Auriculares */}
+              <div className="w-16 h-16 rounded-full bg-white/80 backdrop-blur-xs border border-[#DCE3DC] shadow-xs flex items-center justify-center z-10">
+                <span
+                  className="material-symbols-outlined text-[32px] transition-transform duration-150"
                   style={{
-                    backgroundColor: bg,
-                    transform: scale,
-                    boxShadow: shadow,
-                    opacity
+                    color: isPlaying ? stimulusColor : '#5B6960',
+                    transform: activeSide ? (activeSide === 'L' ? 'scale(1.15) rotate(-6deg)' : 'scale(1.15) rotate(6deg)') : 'scale(1)'
                   }}
-                />
-              );
-            })}
+                >
+                  headphones
+                </span>
+              </div>
+
+              {/* Pulso Derecho */}
+              <div
+                className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-150 ml-2 ${
+                  activeSide === 'R' ? 'scale-125 opacity-100 shadow-md' : 'scale-95 opacity-25'
+                }`}
+                style={{
+                  borderColor: stimulusColor,
+                  backgroundColor: activeSide === 'R' ? `${stimulusColor}15` : 'transparent'
+                }}
+              >
+                <span className="font-mono text-xs font-bold" style={{ color: stimulusColor }}>R</span>
+              </div>
+            </div>
+
+            <span className="text-xs font-semibold text-[#17231D]">
+              Estimulación Bilateral Auditiva
+            </span>
+            <span className="text-[11px] text-[#5B6960] mt-0.5">
+              {isPlaying
+                ? activeSide === 'L'
+                  ? '← Sonido en oído izquierdo'
+                  : activeSide === 'R'
+                  ? 'Sonido en oído derecho →'
+                  : 'Alternancia estéreo continua'
+                : 'Pulsa Iniciar para comenzar la estimulación auditiva'}
+            </span>
           </div>
         )}
 
-        {/* Línea de barrido (sweep) */}
-        {settings.stimulus === 'sweep' && (
-          <div
-            className="sweep-line"
-            style={{
-              left: `${currentPos.fx * 100}%`,
-              backgroundColor: palette.primary,
-              width: `${Math.max(3, Math.round(settings.dotSize / 7))}px`,
-              boxShadow: `0 0 14px ${palette.primary}`
-            }}
-          />
-        )}
-
-        {/* Luces de borde (edges on/off instantáneas) */}
-        {settings.stimulus === 'edges' && (
+        {/* MODO VISUAL: Elementos Cinéticos */}
+        {!isAudioOnly && (
           <>
-            <div
-              className="edge-light-left"
-              style={{
-                backgroundColor: palette.primary,
-                width: `${Math.max(20, settings.dotSize * 0.9)}px`,
-                opacity: currentPos.lat <= 0 ? 1 : 0.04,
-                transform: currentPos.lat <= 0 ? 'scale(1.15)' : 'scale(1)',
-                boxShadow: currentPos.lat <= 0 ? `0 0 20px ${palette.primary}` : 'none'
-              }}
-            />
-            <div
-              className="edge-light-right"
-              style={{
-                backgroundColor: palette.primary,
-                width: `${Math.max(20, settings.dotSize * 0.9)}px`,
-                opacity: currentPos.lat > 0 ? 1 : 0.04,
-                transform: currentPos.lat > 0 ? 'scale(1.15)' : 'scale(1)',
-                boxShadow: currentPos.lat > 0 ? `0 0 20px ${palette.primary}` : 'none'
-              }}
-            />
-          </>
-        )}
+            {/* Barra LED */}
+            {settings.stimulus === 'led-bar' && (
+              <div
+                className="led-bar-track"
+                style={{
+                  top: `${centerFrac() * 100}%`,
+                  left: `${(1 - settings.amplitude) * 50}%`,
+                  right: `${(1 - settings.amplitude) * 50}%`
+                }}
+              >
+                {Array.from({ length: 15 }).map((_, idx) => {
+                  const normIdx = ((currentPos.nx + 1) / 2) * 14;
+                  const dist = Math.abs(idx - normIdx);
+                  let bg = 'rgba(0,0,0,0.12)';
+                  let scale = 'scale(1)';
+                  let shadow = 'none';
+                  let opacity = 1;
 
-        {/* Bola / Estímulo Cinético Principal (Sólido, Bruma, Anillo) */}
-        {isClassicBall && (
-          <div
-            className="absolute -translate-x-1/2 -translate-y-1/2 shadow-sm will-change-transform rounded-full transition-shadow duration-75"
-            style={{
-              left: `${currentPos.fx * 100}%`,
-              top: `${currentPos.fy * 100}%`,
-              width: `${settings.dotSize}px`,
-              height: `${settings.dotSize}px`,
-              backgroundColor: settings.stimulus === 'ring' ? 'transparent' : palette.primary,
-              border:
-                settings.stimulus === 'ring'
-                  ? `${Math.max(2, Math.round(settings.dotSize / 7))}px solid ${palette.primary}`
-                  : 'none',
-              filter: settings.stimulus === 'soft' ? 'blur(3.5px)' : 'none'
-            }}
-          />
+                  if (dist < 0.75) {
+                    bg = stimulusColor;
+                    scale = 'scale(1.45)';
+                    shadow = `0 0 12px ${stimulusColor}`;
+                  } else if (dist < 1.6) {
+                    bg = stimulusColor;
+                    opacity = 0.35;
+                    scale = 'scale(1.08)';
+                  }
+
+                  return (
+                    <div
+                      key={idx}
+                      className="led-bar-dot"
+                      style={{
+                        backgroundColor: bg,
+                        transform: scale,
+                        boxShadow: shadow,
+                        opacity
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Línea de barrido (sweep) */}
+            {settings.stimulus === 'sweep' && (
+              <div
+                className="sweep-line"
+                style={{
+                  left: `${currentPos.fx * 100}%`,
+                  backgroundColor: stimulusColor,
+                  width: `${Math.max(3, Math.round(settings.dotSize / 7))}px`,
+                  boxShadow: `0 0 14px ${stimulusColor}`
+                }}
+              />
+            )}
+
+            {/* Luces de borde (edges on/off instantáneas) */}
+            {settings.stimulus === 'edges' && (
+              <>
+                <div
+                  className="edge-light-left"
+                  style={{
+                    backgroundColor: stimulusColor,
+                    width: `${Math.max(20, settings.dotSize * 0.9)}px`,
+                    opacity: isStoppingSmoothly ? 0.05 : currentPos.lat <= 0 ? 1 : 0.04,
+                    transform: currentPos.lat <= 0 && !isStoppingSmoothly ? 'scale(1.15)' : 'scale(1)',
+                    boxShadow:
+                      currentPos.lat <= 0 && !isStoppingSmoothly ? `0 0 20px ${stimulusColor}` : 'none'
+                  }}
+                />
+                <div
+                  className="edge-light-right"
+                  style={{
+                    backgroundColor: stimulusColor,
+                    width: `${Math.max(20, settings.dotSize * 0.9)}px`,
+                    opacity: isStoppingSmoothly ? 0.05 : currentPos.lat > 0 ? 1 : 0.04,
+                    transform: currentPos.lat > 0 && !isStoppingSmoothly ? 'scale(1.15)' : 'scale(1)',
+                    boxShadow:
+                      currentPos.lat > 0 && !isStoppingSmoothly ? `0 0 20px ${stimulusColor}` : 'none'
+                  }}
+                />
+              </>
+            )}
+
+            {/* Figura Cinética Principal (Círculo, Gota, Corazón, Rombo, Estrella) */}
+            {!isExperimental && (
+              <div
+                className="absolute -translate-x-1/2 -translate-y-1/2 will-change-transform flex items-center justify-center pointer-events-none"
+                style={{
+                  left: `${currentPos.fx * 100}%`,
+                  top: `${currentPos.fy * 100}%`,
+                  width: `${settings.dotSize}px`,
+                  height: `${settings.dotSize}px`,
+                  transition: 'none'
+                }}
+              >
+                {renderShapeContent()}
+              </div>
+            )}
+          </>
         )}
 
         {/* Prompt para desbloquear audio en paciente */}

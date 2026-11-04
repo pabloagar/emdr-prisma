@@ -133,22 +133,19 @@ export const TRAJECTORIES: Record<TrajectoryType, TrajDefinition> = {
   infinity: {
     name: 'Infinito',
     badge: 'comercial',
-    fn: (t) => {
-      const s = Math.sin(t), c = Math.cos(t), d = 1 + s * s;
-      return [(1.25 * c) / d, ((1.25 * s * c) / d) * 1.35];
-    }
+    fn: (t) => [Math.sin(t), 0.55 * Math.sin(2 * t)]
   },
   circular: {
     name: 'Circular',
     badge: 'comercial',
-    fn: (t) => [Math.cos(t), 0.65 * Math.sin(t)]
+    fn: (t) => [Math.sin(t), 0.65 * (1 - Math.cos(t)) - 0.325]
   },
   pendulum: {
     name: 'Péndulo',
     badge: 'comercial',
     fn: (t) => {
       const x = Math.sin(t);
-      return [x, 0.42 * (x * x - 0.5)];
+      return [x, 0.38 * (x * x)];
     }
   },
   arc: {
@@ -156,7 +153,7 @@ export const TRAJECTORIES: Record<TrajectoryType, TrajDefinition> = {
     badge: 'comercial',
     fn: (t) => {
       const x = Math.sin(t);
-      return [x, -0.42 * (1 - x * x) + 0.2];
+      return [x, -0.38 * (x * x)];
     }
   },
   zigzag: {
@@ -174,15 +171,15 @@ export const TRAJECTORIES: Record<TrajectoryType, TrajDefinition> = {
     badge: 'experimental',
     fn: (t) => {
       const x = Math.sin(t);
-      return [x, -0.55 * Math.abs(Math.sin(2 * t)) + 0.25];
+      return [x, -0.55 * Math.abs(Math.sin(t))];
     }
   },
   'smooth-random': {
     name: 'Aleatorio suave',
     badge: 'experimental',
     fn: (t) => [
-      Math.sin(t) * 0.75 + Math.sin(t * 0.47) * 0.25,
-      Math.sin(t * 1.63) * 0.28 + Math.cos(t * 0.71) * 0.18
+      Math.sin(t) * 0.75 + Math.sin(t * 0.5) * 0.25,
+      Math.sin(t * 1.5) * 0.3 + Math.sin(t * 0.7) * 0.2
     ]
   }
 };
