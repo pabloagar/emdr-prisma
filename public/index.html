@@ -1,0 +1,1731 @@
+<!DOCTYPE html><html class="h-full" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>EMDR Prisma · Plataforma de estimulación bilateral</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          clinical: {
+            bg: "#F7F8F6",
+            surface: "#FFFFFF",
+            subtle: "#EFF2EE",
+            border: "#DCE3DC",
+            text: "#17231D",
+            muted: "#5B6960",
+            primary: "#1B3B2B",
+            accent: "#2A5B44",
+            primaryLight: "#E8F0EB",
+            tag: "#E2ECE5"
+          }
+        },
+        fontFamily: {
+          sans: ["'Inter'", "sans-serif"],
+          display: ["'Plus Jakarta Sans'", "sans-serif"],
+          mono: ["'JetBrains Mono'", "monospace"]
+        }
+      }
+    }
+  };
+</script>
+<style>
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .fx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  
+  .swatch-btn[aria-pressed="true"] {
+    box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #1B3B2B;
+    transform: scale(1.1);
+  }
+
+  .traj-card {
+    background-color: #ffffff;
+    border: 1.5px solid #E2E6E2;
+    border-radius: 0.85rem;
+    padding: 0.85rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    min-height: 82px;
+    user-select: none;
+  }
+  .traj-card:hover {
+    border-color: #A3B5A8;
+    background-color: #FBFDFB;
+  }
+  .traj-card[aria-pressed="true"] {
+    border: 2px solid #1B3B2B;
+    background-color: #F1F5F2;
+    box-shadow: 0 2px 8px -2px rgba(27, 59, 43, 0.15);
+  }
+  .traj-card[aria-pressed="true"] .traj-title {
+    color: #17231D;
+    font-weight: 700;
+  }
+  .traj-card[aria-pressed="true"] svg path,
+  .traj-card[aria-pressed="true"] svg line,
+  .traj-card[aria-pressed="true"] svg circle,
+  .traj-card[aria-pressed="true"] svg ellipse {
+    stroke: #1B3B2B;
+  }
+
+  .stim-card {
+    background-color: #ffffff;
+    border: 1.5px solid #E2E6E2;
+    border-radius: 0.85rem;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    min-height: 74px;
+    user-select: none;
+  }
+  .stim-card:hover {
+    border-color: #A3B5A8;
+    background-color: #FBFDFB;
+  }
+  .stim-card[aria-pressed="true"] {
+    border: 2px solid #1B3B2B;
+    background-color: #F1F5F2;
+    box-shadow: 0 2px 8px -2px rgba(27, 59, 43, 0.15);
+  }
+  .stim-card[aria-pressed="true"] .stim-title {
+    color: #17231D;
+    font-weight: 700;
+  }
+
+  /* Acordeón elástico para la barra inferior */
+  #speed-accordion-wrapper {
+    transition: all 340ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #speed-accordion-wrapper.expanded {
+    max-width: 420px;
+    background-color: #F4F6F4;
+    padding: 0.5rem 0.85rem;
+    border-radius: 1rem;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* Micro elementos cinéticos */
+  .led-bar-track {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .led-bar-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: rgba(0,0,0,0.12);
+    transition: background-color 0.05s linear, transform 0.05s linear, box-shadow 0.05s linear;
+  }
+  .sweep-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    pointer-events: none;
+    transform: translateX(-50%);
+    border-radius: 9999px;
+    z-index: 12;
+  }
+  .edge-light-left, .edge-light-right {
+    position: absolute;
+    top: 20%;
+    bottom: 20%;
+    width: 32px;
+    pointer-events: none;
+    border-radius: 20px;
+    z-index: 10;
+    transition: opacity 0.08s linear, transform 0.08s linear;
+    opacity: 0.12;
+  }
+  .edge-light-left { left: 20px; }
+  .edge-light-right { right: 20px; }
+
+  /* Pastillas de intensidad rápida */
+  .step-pip {
+    transition: all 0.2s ease;
+  }
+  .step-pip.active {
+    background-color: #1B3B2B;
+    transform: scaleY(1.4);
+  }
+</style>
+</head>
+<body class="bg-clinical-bg text-clinical-text font-sans antialiased h-full flex flex-col overflow-hidden selection:bg-clinical-primaryLight selection:text-clinical-primary">
+
+<!-- CABECERA CLÍNICA -->
+<header class="h-14 bg-white border-b border-clinical-border px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-all" id="therapist-header">
+  <div class="flex items-center gap-3.5">
+    <div class="w-8 h-8 rounded-xl bg-clinical-primary text-white flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-[19px]">all_inclusive</span>
+    </div>
+    <div>
+      <h1 class="font-display font-bold text-sm tracking-tight text-clinical-text flex items-center gap-2">
+        EMDR Prisma
+        <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-clinical-subtle text-clinical-muted uppercase tracking-wider hidden sm:inline">EMDR Pro 2.0</span>
+      </h1>
+    </div>
+    <div class="h-4 w-[1px] bg-clinical-border mx-1 hidden sm:block"></div>
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-xs font-medium transition-all" id="sync-status-badge">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="sync-status-dot"></span>
+        <span class="text-[11px] font-medium" id="patient-sync-status">Sin conexión</span>
+        <span class="font-mono text-[10px] text-emerald-700/80 hidden lg:inline pl-1 border-l border-emerald-200" id="ws-latency-badge">--</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-clinical-subtle text-clinical-muted text-[11px] font-mono">
+        <span class="material-symbols-outlined text-[14px]">person</span>
+        <span class="">Sala remota</span>
+      </div>
+      <div class="relative inline-block">
+        <button class="text-xs text-clinical-muted hover:text-clinical-primary flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-clinical-subtle border border-transparent hover:border-clinical-border transition-colors font-mono" id="btn-copy-patient-link">
+          <span class="material-symbols-outlined text-[15px]">link</span>
+          <span class="text-[11px] hidden md:inline">Enlace Paciente</span>
+          <span class="text-[10px] px-1 py-0.2 rounded bg-clinical-tag text-clinical-primary font-bold" id="badge-room-id">EMDR-2368</span>
+        </button>
+        <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 hidden z-50 pointer-events-none bg-clinical-primary text-white text-[11px] py-1 px-2.5 rounded-lg shadow-lg whitespace-nowrap items-center gap-1" id="copy-tooltip">
+          <span class="material-symbols-outlined text-[13px] text-emerald-400">check_circle</span>
+          <span class="">Enlace copiado al portapapeles</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2 sm:gap-3">
+    <!-- Indicador de Dirección Estética Rápido -->
+    <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-clinical-subtle border border-clinical-border text-[11px]">
+      <span class="w-2.5 h-2.5 rounded-full bg-[#1B3B2B]" id="active-palette-dot"></span>
+      <span class="font-medium text-clinical-text" id="active-palette-badge">Paleta 01 · Salvia</span>
+    </div>
+
+    <!-- Cronómetro -->
+    <div class="flex items-center gap-2 text-xs bg-clinical-subtle px-3 py-1.5 rounded-lg border border-clinical-border/60 font-mono text-clinical-muted">
+      <span class="material-symbols-outlined text-[15px] text-clinical-muted">timer</span>
+      <span class="font-bold text-clinical-primary text-xs" id="session-timer">00:00</span>
+      <button class="hover:text-clinical-primary transition-colors text-clinical-muted/70 p-0.5 rounded hover:bg-white" id="btn-reset-timer" title="Reiniciar tiempo">
+        <span class="material-symbols-outlined text-[13px]">restart_alt</span>
+      </button>
+    </div>
+
+    <!-- Toggle panel -->
+    <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-clinical-subtle hover:bg-clinical-tag border border-clinical-border text-xs cursor-pointer transition-colors" id="btn-quick-template-menu" title="Plantillas y perfiles de sesión"><span class="material-symbols-outlined text-[17px] text-clinical-primary">bookmarks</span><span class="font-medium text-clinical-text" id="header-active-template-name">Trauma Agudo · Calma</span><span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white text-clinical-primary font-bold shadow-2xs">Perfil</span></div><button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-clinical-primaryLight hover:bg-clinical-tag text-clinical-primary font-display font-semibold text-xs transition-all border border-clinical-accent/20 shadow-xs" id="btn-toggle-config-panel">
+      <span class="material-symbols-outlined text-[17px]">tune</span>
+      <span id="config-panel-btn-text" class="">Configuración Total</span>
+    </button>
+    
+    <!-- Informe -->
+    <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-clinical-muted hover:text-clinical-text hover:bg-clinical-subtle transition-colors" id="btn-open-clinical-modal">
+      <span class="material-symbols-outlined text-[18px]">clinical_notes</span>
+      <span class="hidden xl:inline">Informe</span>
+    </button>
+  </div>
+</header>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<main class="flex-1 w-full overflow-hidden p-2 sm:p-3 relative flex gap-3" id="main-layout">
+  <!-- ESCENARIO / VIEWPORT -->
+  <div class="flex-1 h-full flex flex-col relative rounded-2xl sm:rounded-3xl border border-clinical-border overflow-hidden bg-[#faf8f5] transition-all shadow-sm" id="viewport-box">
+    
+    <!-- Micro-barra superior del lienzo -->
+    <div class="absolute top-0 inset-x-0 h-10 px-4 flex items-center justify-between text-xs z-20 pointer-events-none select-none" id="stage-top-bar">
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/5 backdrop-blur-xs text-clinical-text border border-black/5" id="status-pill">
+          <span class="w-2 h-2 rounded-full bg-neutral-400" id="status-indicator"></span>
+          <span id="status-label" class="">En Reposo</span>
+        </div>
+        <span class="text-neutral-400 text-xs hidden sm:inline">·</span>
+        <span class="text-neutral-600 font-mono text-[11px] hidden sm:inline" id="active-traj-badge">Horizontal (Armónico)</span>
+        <span class="text-neutral-400 text-xs hidden sm:inline">·</span>
+        <span class="text-neutral-700 font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/5 hidden md:inline" id="active-kinetics-badge">Ping-pong continuo</span>
+      </div>
+      
+      <!-- Indicador estéreo L / R -->
+      <div class="flex items-center gap-1 font-mono text-[10px] font-semibold text-neutral-400 pointer-events-auto">
+        <span class="w-6 h-5 rounded flex items-center justify-center bg-black/5 transition-all duration-100" id="side-left">L</span>
+        <span class="w-6 h-5 rounded flex items-center justify-center bg-black/5 transition-all duration-100" id="side-right">R</span>
+      </div>
+    </div>
+
+    <!-- ESCENARIO ACTIVO -->
+    <div class="relative flex-1 w-full h-full overflow-hidden select-none" id="stage-area" style="background-color: #faf8f5;">
+      <div class="absolute inset-x-8 top-1/2 -translate-y-1/2 h-[1px] border-b border-dashed border-clinical-primary/15 pointer-events-none" id="guide-line"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-clinical-primary/25 pointer-events-none transition-opacity duration-300" id="center-anchor"></div>
+      
+      <!-- Canvas para estelas y láser -->
+      <canvas aria-hidden="true" class="fx-canvas" id="canvas-fx"></canvas>
+
+      <!-- Elementos específicos de estímulos experimentales -->
+      <!-- Barra LED -->
+      <div class="led-bar-track hidden" id="led-track">
+        <div class="led-bar-dot" data-idx="0"></div>
+        <div class="led-bar-dot" data-idx="1"></div>
+        <div class="led-bar-dot" data-idx="2"></div>
+        <div class="led-bar-dot" data-idx="3"></div>
+        <div class="led-bar-dot" data-idx="4"></div>
+        <div class="led-bar-dot" data-idx="5"></div>
+        <div class="led-bar-dot" data-idx="6"></div>
+        <div class="led-bar-dot" data-idx="7"></div>
+        <div class="led-bar-dot" data-idx="8"></div>
+        <div class="led-bar-dot" data-idx="9"></div>
+        <div class="led-bar-dot" data-idx="10"></div>
+        <div class="led-bar-dot" data-idx="11"></div>
+        <div class="led-bar-dot" data-idx="12"></div>
+        <div class="led-bar-dot" data-idx="13"></div>
+        <div class="led-bar-dot" data-idx="14"></div>
+      </div>
+      <!-- Línea de barrido -->
+      <div class="sweep-line hidden" id="sweep-line-el"></div>
+      <!-- Luces de borde -->
+      <div class="edge-light-left hidden" id="edge-left-el"></div>
+      <div class="edge-light-right hidden" id="edge-right-el"></div>
+
+      <!-- Bola / Estímulo Cinético Principal (Para estímulos clásicos: Sólido, Bruma, Anillo) -->
+      <div class="absolute w-8 h-8 rounded-full bg-[#1B3B2B] -translate-x-1/2 -translate-y-1/2 shadow-sm will-change-transform" id="stimulus-element" style="left: 50%; top: 50%;"></div>
+
+      <!-- Banner audio si está en modo paciente -->
+      <div class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-black/10 shadow-sm text-xs text-clinical-primary font-medium flex items-center gap-2 cursor-pointer pointer-events-auto" id="patient-audio-prompt">
+        <span class="material-symbols-outlined text-[18px]">volume_up</span>
+        <span class="">Haz clic aquí para activar el sonido bilateral</span>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- BARRA INFERIOR ACORDEÓN: SE AGRANDA ELASTICAMENTE SEGÚN INTENSIDAD     -->
+    <!-- ===================================================================== -->
+    <div class="absolute bottom-3 inset-x-3 sm:inset-x-6 z-20 pointer-events-none flex justify-center" id="therapist-bottom-bar">
+      <div class="pointer-events-auto bg-white/95 backdrop-blur-md border border-clinical-border rounded-2xl px-4 py-2.5 shadow-md flex items-center justify-between gap-3 max-w-3xl w-full transition-all duration-300" id="bottom-bar-card">
+        
+        <!-- Botón Iniciar / Pausa suave -->
+        <button class="h-11 px-5 rounded-xl bg-clinical-primary hover:bg-clinical-accent active:scale-[0.98] text-white font-display font-semibold text-xs shadow-sm flex items-center justify-center gap-2 transition-all shrink-0" id="btn-main-play">
+          <span class="material-symbols-outlined text-[22px]" id="main-play-icon">play_arrow</span>
+          <span class="tracking-tight text-xs font-semibold" id="main-play-text">Iniciar</span>
+        </button>
+
+        <!-- SECCIÓN DE INTENSIDAD CON EXPANSIÓN TIPO ACORDEÓN -->
+        <div class="flex-1 flex items-center gap-3 transition-all duration-300" id="speed-accordion-wrapper">
+          <div class="flex flex-col gap-1 w-full">
+            <div class="flex items-center justify-between text-xs leading-none">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-clinical-muted flex items-center gap-1 font-mono">
+                Velocidad / Frecuencia
+              </span>
+              <div class="flex items-center gap-1.5 font-mono">
+                <span class="font-bold text-xs text-clinical-primary" id="intensity-level-badge">Nvl 8</span>
+                <span class="text-neutral-400 text-[10px]" id="intensity-hz-badge">0.79 Hz</span>
+              </div>
+            </div>
+            
+            <!-- Barra con deslizador interactivo -->
+            <div class="flex items-center gap-2">
+              <button class="text-clinical-muted hover:text-clinical-primary w-6 h-6 rounded flex items-center justify-center hover:bg-clinical-subtle font-bold text-sm select-none" id="btn-speed-minus">−</button>
+              <input class="w-full h-2.5 bg-clinical-subtle rounded-lg accent-clinical-primary cursor-pointer transition-all" id="quick-speed-slider" max="20" min="1" type="range" value="8">
+              <button class="text-clinical-muted hover:text-clinical-primary w-6 h-6 rounded flex items-center justify-center hover:bg-clinical-subtle font-bold text-sm select-none" id="btn-speed-plus">+</button>
+            </div>
+
+            <!-- Micro-medidor acordeón de niveles (1-20) visible al expandir -->
+            <div class="hidden flex items-center justify-between gap-1 pt-1 overflow-hidden" id="accordion-pips-row">
+              <!-- Generado dinámicamente -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector rápido de trayectorias estándar -->
+        <div class="hidden sm:flex items-center gap-1 bg-clinical-subtle p-1 rounded-xl border border-clinical-border/50 shrink-0">
+          <button class="quick-traj-btn p-1.5 rounded-lg text-clinical-primary bg-white shadow-2xs text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all" data-traj="horizontal">
+            <span class="material-symbols-outlined text-[15px]">swap_horiz</span>
+            <span class="">Horizontal</span>
+          </button>
+          <button class="quick-traj-btn p-1.5 rounded-lg text-clinical-muted hover:text-clinical-text text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all" data-traj="infinity">
+            <span class="material-symbols-outlined text-[15px]">all_inclusive</span>
+            <span class="">Infinito</span>
+          </button>
+          <button class="quick-traj-btn p-1.5 rounded-lg text-clinical-muted hover:text-clinical-text text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all" data-traj="vertical">
+            <span class="material-symbols-outlined text-[15px]">swap_vert</span>
+            <span class="">Vertical</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL LATERAL "CONFIGURACIÓN TOTAL" -->
+  <aside class="w-full md:w-[480px] lg:w-[520px] shrink-0 bg-white border border-clinical-border rounded-2xl sm:rounded-3xl shadow-lg flex flex-col overflow-hidden transition-all duration-300 z-30" id="config-sidebar">
+    <div class="p-4 border-b border-clinical-border flex items-center justify-between bg-clinical-subtle/50 shrink-0">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-clinical-primary text-white flex items-center justify-center">
+          <span class="material-symbols-outlined text-[16px]">tune</span>
+        </div>
+        <div>
+          <h2 class="font-display font-bold text-xs text-clinical-text uppercase tracking-wide">Configuración Total</h2>
+          <p class="text-[11px] text-clinical-muted">Lógica de paletas y física de estímulos en vivo</p>
+        </div>
+      </div>
+      <button class="text-clinical-muted hover:text-clinical-text p-1.5 rounded-lg hover:bg-white text-xs flex items-center gap-1 transition-colors" id="btn-close-config-sidebar">
+        <span class="text-[11px] font-medium hidden sm:inline">Colapsar</span>
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+
+    <!-- Pestañas -->
+    <div class="flex border-b border-clinical-border bg-white text-xs font-medium shrink-0"><button class="tab-btn flex-1 py-2.5 text-center border-b-2 border-clinical-primary text-clinical-primary font-semibold flex items-center justify-center gap-1" data-tab="templates"><span class="material-symbols-outlined text-[16px]">bookmarks</span><span class="">Plantillas</span></button>
+      <button class="tab-btn flex-1 py-2.5 text-center border-b-2 border-transparent text-clinical-muted hover:text-clinical-text flex items-center justify-center gap-1" data-tab="palettes"><span class="material-symbols-outlined text-[16px]">palette</span><span class="">Paletas</span></button>
+      <button class="tab-btn flex-1 py-2.5 text-center border-b-2 border-transparent text-clinical-muted hover:text-clinical-text flex items-center justify-center gap-1" data-tab="stimuli">
+        <span class="material-symbols-outlined text-[16px]">wb_sunny</span>
+        <span class="">Estímulos</span>
+      </button>
+      <button class="tab-btn flex-1 py-2.5 text-center border-b-2 border-transparent text-clinical-muted hover:text-clinical-text flex items-center justify-center gap-1" data-tab="traj">
+        <span class="material-symbols-outlined text-[16px]">gesture</span>
+        <span class="">Trayectorias</span>
+      </button>
+      <button class="tab-btn flex-1 py-2.5 text-center border-b-2 border-transparent text-clinical-muted hover:text-clinical-text flex items-center justify-center gap-1" data-tab="audio">
+        <span class="material-symbols-outlined text-[16px]">headphones</span>
+        <span class="">Audio</span>
+      </button>
+    </div>
+
+    <!-- CONTENIDO DEL PANEL -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col gap-6 hide-scrollbar">
+      
+      <!-- ============================================== -->
+      <!-- PESTAÑA 1: PALETAS DE COLOR OFICIALES BILATERAL -->
+      <!-- ============================================== -->
+      <section class="tab-panel flex flex-col gap-4" id="tab-templates-content"><div><div class="flex items-center justify-between mb-1"><h3 class="text-xs font-semibold uppercase tracking-wider text-clinical-muted font-mono">Plantillas Clínicas Preconfiguradas</h3><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">EMDR Standard</span></div><p class="text-[11px] text-clinical-muted">Protocolos clínicos validados con combinaciones de paleta, cinemática, velocidad y audio optimizadas.</p></div><div class="flex flex-col gap-2.5" id="templates-cards-container"><div class="p-3.5 rounded-xl border-2 border-clinical-primary bg-[#FBF9F5] flex flex-col gap-2.5 transition-all shadow-xs"><div class="flex items-start justify-between gap-2"><div><div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#1B3B2B]"></span><span class="font-display font-bold text-xs text-clinical-primary">Trauma Agudo &amp; Regulación</span></div><p class="text-[11px] text-clinical-muted mt-0.5 leading-relaxed">Suave atenuación somática. Ideal para estabilización y fases iniciales de reprocesamiento.</p></div><button class="px-2.5 py-1 rounded-lg bg-clinical-primary text-white text-[11px] font-semibold hover:bg-clinical-accent shrink-0 shadow-2xs transition-all" data-apply-template="trauma-agudo">Cargar</button></div><div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-clinical-border/50"><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-clinical-border text-clinical-text">Paleta Salvia</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-clinical-border text-clinical-text">Esfera Sólida</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-clinical-border text-clinical-text">Horizontal (0.65 Hz)</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-clinical-border text-clinical-text">Latido Somático</span></div></div><div class="p-3.5 rounded-xl border border-clinical-border bg-white hover:border-clinical-primary/40 flex flex-col gap-2.5 transition-all"><div class="flex items-start justify-between gap-2"><div><div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#1C364A]"></span><span class="font-display font-bold text-xs text-clinical-text">Foco Nítido &amp; Desbloqueo</span></div><p class="text-[11px] text-clinical-muted mt-0.5 leading-relaxed">Láser continuo lineal para reactivar seguimiento visual en bloqueos o disociación.</p></div><button class="px-2.5 py-1 rounded-lg bg-clinical-subtle hover:bg-clinical-primary hover:text-white text-clinical-text text-[11px] font-semibold shrink-0 transition-all" data-apply-template="foco-nitido">Cargar</button></div><div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-clinical-border/50"><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Paleta Bruma</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Haz Láser</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Infinito (0.95 Hz)</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Cuenco Zen</span></div></div><div class="p-3.5 rounded-xl border border-clinical-border bg-white hover:border-clinical-primary/40 flex flex-col gap-2.5 transition-all"><div class="flex items-start justify-between gap-2"><div><div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#2E2822]"></span><span class="font-display font-bold text-xs text-clinical-text">Hipersensibilidad &amp; Calma Táctil</span></div><p class="text-[11px] text-clinical-muted mt-0.5 leading-relaxed">Textura visual orgánica y bajo brillo. Adecuado para fotofobia o neurodivergencia.</p></div><button class="px-2.5 py-1 rounded-lg bg-clinical-subtle hover:bg-clinical-primary hover:text-white text-clinical-text text-[11px] font-semibold shrink-0 transition-all" data-apply-template="hipersensibilidad">Cargar</button></div><div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-clinical-border/50"><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Paleta Lino</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Barra LED</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Péndulo (0.55 Hz)</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Gota de Loto</span></div></div><div class="p-3.5 rounded-xl border border-clinical-border bg-white hover:border-clinical-primary/40 flex flex-col gap-2.5 transition-all"><div class="flex items-start justify-between gap-2"><div><div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#1F2723]"></span><span class="font-display font-bold text-xs text-clinical-text">Alternancia Rápida / Fobia</span></div><p class="text-[11px] text-clinical-muted mt-0.5 leading-relaxed">Luces de borde con corte on/off binario para desensibilización bilateral contundente.</p></div><button class="px-2.5 py-1 rounded-lg bg-clinical-subtle hover:bg-clinical-primary hover:text-white text-clinical-text text-[11px] font-semibold shrink-0 transition-all" data-apply-template="alternancia-rapida">Cargar</button></div><div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-clinical-border/50"><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Penumbra</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Luces de Borde</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Alternante (1.15 Hz)</span><span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Click Metrónomo</span></div></div></div><div class="pt-3 border-t border-clinical-border/70 flex flex-col gap-3"><div class="flex items-center justify-between"><span class="text-xs font-semibold text-clinical-text flex items-center gap-1.5 font-mono uppercase tracking-wide"><span class="material-symbols-outlined text-[16px] text-clinical-primary">save</span><span class="">Guardar Plantilla de Paciente</span></span><span class="text-[10px] text-clinical-muted font-mono">Configuración actual</span></div><div class="flex gap-2"><input class="flex-1 text-xs px-3 py-2 bg-clinical-subtle border border-clinical-border rounded-xl focus:ring-1 focus:ring-clinical-primary focus:outline-none" id="input-custom-template-name" placeholder="Ej. Paciente M. G. · Sesión 4" type="text"><button class="px-3.5 py-2 bg-clinical-primary hover:bg-clinical-accent text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1 shrink-0 transition-all" id="btn-save-custom-template"><span class="material-symbols-outlined text-[16px]">bookmark_add</span><span class="">Guardar</span></button></div><div class="flex flex-col gap-2" id="custom-templates-list"><div class="text-[11px] text-clinical-muted italic" id="empty-custom-templates-msg">No hay perfiles personalizados guardados aún.</div></div></div></section><section class="tab-panel flex flex-col gap-4 hidden" id="tab-palettes-content">
+        <div>
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-clinical-muted font-mono mb-1">Paletas Oficiales de Bilateral</h3>
+          <p class="text-[11px] text-clinical-muted">Basadas en el sistema de diseño clínico: Salvia, Bruma marina y Lino orgánico.</p>
+        </div>
+
+        <!-- Paleta 01: Salvia -->
+        <div class="palette-card p-3.5 rounded-xl border-2 border-clinical-primary bg-[#FBF9F5] flex flex-col gap-2.5 cursor-pointer transition-all" data-palette="salvia">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#1B3B2B]"></span>
+              <span class="font-display font-bold text-xs text-clinical-primary">Paleta 01 · Salvia (Botánica &amp; Contraste Calmo)</span>
+            </div>
+            <span class="badge-status text-[9px] font-mono px-2 py-0.5 rounded bg-clinical-primary text-white font-semibold">ACTIVA</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-[#faf8f5] border border-black/10" title="Fondo: #faf8f5"></span>
+            <span class="w-6 h-6 rounded-md bg-[#1B3B2B]" title="Primario: #1B3B2B"></span>
+            <span class="w-6 h-6 rounded-md bg-[#2A5B44]" title="Acento: #2A5B44"></span>
+            <span class="w-6 h-6 rounded-md bg-[#E8F0EB]" title="Subtle: #E8F0EB"></span>
+            <span class="w-6 h-6 rounded-md bg-[#5B6960]" title="Muted: #5B6960"></span>
+          </div>
+          <p class="text-[11px] text-clinical-muted leading-relaxed">Máxima atenuación del sistema nervioso simpático. Especialmente diseñada para procesamiento de traumas complejos en consulta privada.</p>
+        </div>
+
+        <!-- Paleta 02: Bruma -->
+        <div class="palette-card p-3.5 rounded-xl border border-clinical-border bg-white hover:border-clinical-primary/40 flex flex-col gap-2.5 cursor-pointer transition-all" data-palette="bruma">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#1C364A]"></span>
+              <span class="font-display font-bold text-xs text-clinical-text">Paleta 02 · Bruma (Oceánica &amp; Enfoque Nítido)</span>
+            </div>
+            <span class="badge-status text-[9px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">APLICAR</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-[#F4F7F9] border border-black/10" title="Fondo: #F4F7F9"></span>
+            <span class="w-6 h-6 rounded-md bg-[#1C364A]" title="Primario: #1C364A"></span>
+            <span class="w-6 h-6 rounded-md bg-[#2F6FA3]" title="Acento: #2F6FA3"></span>
+            <span class="w-6 h-6 rounded-md bg-[#E3EDF5]" title="Subtle: #E3EDF5"></span>
+            <span class="w-6 h-6 rounded-md bg-[#586A78]" title="Muted: #586A78"></span>
+          </div>
+          <p class="text-[11px] text-clinical-muted leading-relaxed">Azul zafiro costero con marfil limpio. Aporta precisión neurológica y frescura visual para pacientes con fatiga atencional.</p>
+        </div>
+
+        <!-- Paleta 03: Lino -->
+        <div class="palette-card p-3.5 rounded-xl border border-clinical-border bg-[#F5F4EF] hover:border-clinical-primary/40 flex flex-col gap-2.5 cursor-pointer transition-all" data-palette="lino">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#2E2822]"></span>
+              <span class="font-display font-bold text-xs text-clinical-text">Paleta 03 · Lino (Tierra &amp; Acogida Somática)</span>
+            </div>
+            <span class="badge-status text-[9px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">APLICAR</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-[#EFECE6] border border-black/10" title="Fondo: #EFECE6"></span>
+            <span class="w-6 h-6 rounded-md bg-[#2E2822]" title="Primario: #2E2822"></span>
+            <span class="w-6 h-6 rounded-md bg-[#6B5A49]" title="Acento: #6B5A49"></span>
+            <span class="w-6 h-6 rounded-md bg-[#E4DDD3]" title="Subtle: #E4DDD3"></span>
+            <span class="w-6 h-6 rounded-md bg-[#70675E]" title="Muted: #70675E"></span>
+          </div>
+          <p class="text-[11px] text-clinical-muted leading-relaxed">Cálida, orgánica y protectora. Simula texturas de papel y algodón puro, ideal para pacientes con hipersensibilidad a pantallas.</p>
+        </div>
+
+        <!-- Selector personalizado manual -->
+        <div class="flex flex-col gap-2 pt-2 border-t border-clinical-border/60">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-clinical-muted font-mono">Tono de Fondo Rápido</span>
+            <span class="text-[11px] text-clinical-primary font-medium" id="current-bg-hex">#faf8f5</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2">
+            <button class="btn-quick-bg p-2 rounded-lg border text-center text-xs bg-[#faf8f5] font-medium" data-bg="#faf8f5">Salvia L.</button>
+            <button class="btn-quick-bg p-2 rounded-lg border text-center text-xs bg-[#F4F7F9] font-medium" data-bg="#F4F7F9">Bruma L.</button>
+            <button class="btn-quick-bg p-2 rounded-lg border text-center text-xs bg-[#EFECE6] font-medium" data-bg="#EFECE6">Lino L.</button>
+            <button class="btn-quick-bg p-2 rounded-lg border text-center text-xs bg-[#1F2723] text-white font-medium" data-bg="#1F2723">Penumbra</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- PESTAÑA 2: ESTÍMULOS CLÁSICOS Y EXPERIMENTALES -->
+      <!-- ============================================== -->
+      <section class="tab-panel flex flex-col gap-5 hidden" id="tab-stimuli-content">
+        <!-- Estímulos estándar (La bola / círculo) -->
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold uppercase tracking-wider text-clinical-muted font-mono flex items-center justify-between">
+            <span class="">Estímulos Clásicos (Movimiento Armónico / Suave)</span>
+            <span class="text-[10px] text-neutral-400 font-normal">Sin cambio de física</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <button aria-pressed="true" class="stim-card stim-shape-btn" data-shape="circle">
+              <span class="w-4 h-4 rounded-full bg-clinical-primary mb-1.5"></span>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Sólido</span>
+            </button>
+            <button aria-pressed="false" class="stim-card stim-shape-btn" data-shape="soft">
+              <span class="w-4 h-4 rounded-full bg-clinical-primary blur-[1.5px] mb-1.5"></span>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Bruma</span>
+            </button>
+            <button aria-pressed="false" class="stim-card stim-shape-btn" data-shape="ring">
+              <span class="w-4 h-4 rounded-full border-2 border-clinical-primary mb-1.5"></span>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Anillo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Estímulos experimentales con cinemática dedicada -->
+        <div class="flex flex-col gap-2 pt-2 border-t border-clinical-border/60">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold uppercase tracking-wider text-clinical-muted font-mono flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-clinical-accent">science</span>
+              <span class="">Estímulos Experimentales</span>
+            </label>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">Física Especial</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <!-- Barra LED -->
+            <button aria-pressed="false" class="stim-card stim-shape-btn" data-shape="led-bar">
+              <div class="h-6 flex items-center justify-center mb-1">
+                <svg fill="none" height="12" viewBox="0 0 68 12" width="68" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="6" cy="6" fill="#BCC5BD" r="2"></circle>
+                  <circle cx="16" cy="6" fill="#BCC5BD" r="2"></circle>
+                  <circle cx="26" cy="6" fill="#BCC5BD" r="2"></circle>
+                  <circle cx="34" cy="6" fill="#1B3B2B" r="3.2"></circle>
+                  <circle cx="42" cy="6" fill="#BCC5BD" r="2"></circle>
+                  <circle cx="52" cy="6" fill="#BCC5BD" r="2"></circle>
+                  <circle cx="62" cy="6" fill="#BCC5BD" r="2"></circle>
+                </svg>
+              </div>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Barra LED</span>
+              <span class="text-[9px] text-neutral-400 font-mono mt-0.5">Traslación continua</span>
+            </button>
+
+            <!-- Línea de barrido -->
+            <button aria-pressed="false" class="stim-card stim-shape-btn" data-shape="sweep">
+              <div class="h-6 flex items-center justify-center mb-1">
+                <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
+                  <line stroke="#BCC5BD" stroke-dasharray="2 2" stroke-width="1.5" x1="8" x2="14" y1="10" y2="10"></line>
+                  <line stroke="#1B3B2B" stroke-linecap="round" stroke-width="2.2" x1="20" x2="20" y1="2" y2="18"></line>
+                  <line stroke="#BCC5BD" stroke-dasharray="2 2" stroke-width="1.5" x1="26" x2="32" y1="10" y2="10"></line>
+                </svg>
+              </div>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Línea de barrido</span>
+              <span class="text-[9px] text-neutral-400 font-mono mt-0.5">Velocidad lineal (sin ease)</span>
+            </button>
+
+            <!-- Haz láser -->
+            <button aria-pressed="false" class="stim-card stim-shape-btn" data-shape="laser">
+              <div class="h-6 flex items-center justify-center mb-1">
+                <svg fill="none" height="22" viewBox="0 0 40 22" width="40" xmlns="http://www.w3.org/2000/svg">
+                  <line stroke="#1B3B2B" stroke-linecap="round" stroke-width="2" x1="12" x2="26" y1="18" y2="6"></line>
+                  <circle cx="27" cy="5" fill="#BCC5BD" r="3.5"></circle>
+                  <circle cx="27" cy="5" fill="#1B3B2B" r="1.8"></circle>
+                </svg>
+              </div>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Haz láser</span>
+              <span class="text-[9px] text-neutral-400 font-mono mt-0.5">Haz focal continuo</span>
+            </button>
+
+            <!-- Luces de borde (On/Off binario instantáneo) -->
+            <button aria-pressed="false" class="stim-card stim-shape-btn" data-shape="edges">
+              <div class="h-6 flex items-center justify-center mb-1">
+                <svg fill="none" height="22" viewBox="0 0 50 22" width="50" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 4C11.5 4 8 7.5 8 11C8 14.5 11.5 18 16 18V4Z" fill="#1B3B2B"></path>
+                  <path d="M34 4C38.5 4 42 7.5 42 11C42 14.5 38.5 18 34 18V4Z" fill="#D3DDD5"></path>
+                </svg>
+              </div>
+              <span class="stim-title text-xs font-semibold text-clinical-text">Luces de borde</span>
+              <span class="text-[9px] text-emerald-700 font-mono mt-0.5 font-semibold">Alternancia On/Off binaria</span>
+            </button>
+          </div>
+
+          <!-- LÓGICA DE MOVIMIENTO APLICADA DIRECTAMENTE SEGÚN TU ESPECIFICACIÓN -->
+          <div class="p-3 bg-clinical-subtle rounded-xl border border-clinical-border/80 flex flex-col gap-1.5 text-xs text-clinical-muted leading-relaxed">
+            <div class="font-semibold text-clinical-text flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px] text-clinical-primary">info</span>
+              <span class="">Reglas de movimiento activadas:</span>
+            </div>
+            <ul class="list-disc pl-4 space-y-1 text-[11px]">
+              <li class=""><strong class="text-clinical-text">Traslación Continua Lineal (Barrido, Láser, Barra LED):</strong> Ping-pong a velocidad constante, cero aceleración en bordes (<code class="font-mono text-clinical-primary">linear, sin ease-in/out</code>).</li>
+              <li class=""><strong class="text-clinical-text">Alternancia Binaria Instantánea (Luces de Borde):</strong> Aparece en extremo izquierdo, desaparece, y aparece en extremo derecho. Cero traslación (<code class="font-mono text-clinical-primary">On/Off instantáneo</code>).</li>
+              <li class=""><strong class="text-clinical-text">Pelota / Esfera Clásica:</strong> Mantiene la cinemática armónica y cómoda para EMDR tradicional.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Diámetro / Tamaño del estímulo -->
+        <div class="flex flex-col gap-1.5 pt-2 border-t border-clinical-border/60">
+          <div class="flex justify-between text-xs">
+            <span class="font-medium text-clinical-muted">Calibre / Grosor</span>
+            <span class="font-mono font-bold text-clinical-primary" id="size-val-label">32 px</span>
+          </div>
+          <input class="w-full h-1.5 bg-clinical-subtle rounded-lg accent-clinical-primary cursor-pointer" id="slider-dot-size" max="52" min="16" type="range" value="32">
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- PESTAÑA 3: TRAYECTORIAS (11 PATRONES DE IMAGE_2) -->
+      <!-- ============================================== -->
+      <section class="tab-panel flex flex-col gap-3.5 hidden" id="tab-traj-content">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-clinical-muted font-mono">11 Trayectorias Clínicas</h3>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted">Sincronizado</span>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-2.5">
+          <!-- 1. Horizontal -->
+          <button aria-pressed="true" class="traj-card traj-select-card" data-traj="horizontal">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="12" viewBox="0 0 44 12" width="44" xmlns="http://www.w3.org/2000/svg">
+                <line stroke="#2D3B32" stroke-width="2" x1="6" x2="38" y1="6" y2="6"></line>
+                <circle cx="6" cy="6" fill="#2D3B32" r="2.5"></circle>
+                <circle cx="38" cy="6" fill="#2D3B32" r="2.5"></circle>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Horizontal</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">con estudios</span>
+          </button>
+          <!-- 2. Vertical -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="vertical">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="24" viewBox="0 0 20 24" width="20" xmlns="http://www.w3.org/2000/svg">
+                <line stroke="#2D3B32" stroke-width="2" x1="10" x2="10" y1="4" y2="20"></line>
+                <circle cx="10" cy="4" fill="#2D3B32" r="2.5"></circle>
+                <circle cx="10" cy="20" fill="#2D3B32" r="2.5"></circle>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Vertical</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">con estudios</span>
+          </button>
+          <!-- 3. Diagonal -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="diagonal">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="22" viewBox="0 0 38 22" width="38" xmlns="http://www.w3.org/2000/svg">
+                <line stroke="#2D3B32" stroke-width="2" x1="6" x2="32" y1="17" y2="5"></line>
+                <circle cx="6" cy="17" fill="#2D3B32" r="2.5"></circle>
+                <circle cx="32" cy="5" fill="#2D3B32" r="2.5"></circle>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Diagonal</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">poco evaluada</span>
+          </button>
+          <!-- 4. Alternante -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="alternate">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="12" viewBox="0 0 44 12" width="44" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="6" cy="6" fill="#2D3B32" r="3"></circle>
+                <line stroke="#2D3B32" stroke-dasharray="3 3" stroke-width="1.8" x1="13" x2="31" y1="6" y2="6"></line>
+                <circle cx="38" cy="6" fill="none" r="3" stroke="#2D3B32" stroke-width="1.8"></circle>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Alternante</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">uso online</span>
+          </button>
+          <!-- 5. Infinito -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="infinity">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 5C6 5 4 7.5 4 10C4 12.5 6 15 10 15C15 15 18 10 20 10C22 10 25 15 30 15C34 15 36 12.5 36 10C36 7.5 34 5 30 5C25 5 22 10 20 10C18 10 15 5 10 5Z" stroke="#2D3B32" stroke-linejoin="round" stroke-width="2"></path>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Infinito</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">comercial</span>
+          </button>
+          <!-- 6. Circular -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="circular">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="20" cy="10" rx="14" ry="7" stroke="#2D3B32" stroke-width="2"></ellipse>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Circular</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">comercial</span>
+          </button>
+          <!-- 7. Péndulo -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="pendulum">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 8C12 16 28 16 34 8" stroke="#2D3B32" stroke-linecap="round" stroke-width="2"></path>
+                <circle cx="6" cy="8" fill="#2D3B32" r="2.5"></circle>
+                <circle cx="34" cy="8" fill="#2D3B32" r="2.5"></circle>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Péndulo</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">comercial</span>
+          </button>
+          <!-- 8. Arco -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="arc">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 14C12 6 28 6 34 14" stroke="#2D3B32" stroke-linecap="round" stroke-width="2"></path>
+                <circle cx="6" cy="14" fill="#2D3B32" r="2.5"></circle>
+                <circle cx="34" cy="14" fill="#2D3B32" r="2.5"></circle>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Arco</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">comercial</span>
+          </button>
+          <!-- 9. Zigzag -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="zigzag">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 40 20" width="40" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="5,15 12,5 20,15 28,5 35,15" stroke="#2D3B32" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></polyline>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Zigzag</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">experimental</span>
+          </button>
+          <!-- 10. Rebote -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="bounce">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 42 20" width="42" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 14C8 6 15 6 19 14C23 6 30 6 37 14" stroke="#2D3B32" stroke-linecap="round" stroke-width="2"></path>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Rebote</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">experimental</span>
+          </button>
+          <!-- 11. Aleatorio suave -->
+          <button aria-pressed="false" class="traj-card traj-select-card" data-traj="smooth-random">
+            <div class="h-6 flex items-center justify-center mb-1">
+              <svg fill="none" height="20" viewBox="0 0 42 20" width="42" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 13C10 13 12 7 17 8C22 9 24 5 29 7C34 9 34 5 36 6" stroke="#2D3B32" stroke-linecap="round" stroke-width="2"></path>
+              </svg>
+            </div>
+            <span class="traj-title text-xs font-semibold text-clinical-text">Aleatorio suave</span>
+            <span class="text-[10px] text-neutral-400 font-normal mt-0.5">experimental</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- PESTAÑA 4: AUDIO BILATERAL L/R                  -->
+      <!-- ============================================== -->
+      <section class="tab-panel flex flex-col gap-5 hidden" id="tab-audio-content">
+        <div class="flex items-center justify-between p-3 rounded-xl bg-clinical-subtle border border-clinical-border/80">
+          <div>
+            <div class="text-xs font-semibold text-clinical-text">Audio Estéreo Bilateral L/R</div>
+            <div class="text-[11px] text-clinical-muted">Panorámica auditiva sincronizada al golpear extremos</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input checked="" class="sr-only peer" id="checkbox-sound-active" type="checkbox">
+            <div class="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-clinical-primary"></div>
+          </label>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold uppercase tracking-wider text-clinical-muted font-mono">Timbre Acústico</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button aria-pressed="true" class="traj-card sound-option-btn p-3 flex flex-row items-center gap-2.5 text-left transition-all" data-sound="heartbeat">
+              <span class="material-symbols-outlined text-[20px] text-clinical-primary">favorite</span>
+              <div>
+                <div class="text-xs font-semibold">Latido Somático</div>
+                <div class="text-[10px] text-clinical-muted">Grave orgánico</div>
+              </div>
+            </button>
+            <button aria-pressed="false" class="traj-card sound-option-btn p-3 flex flex-row items-center gap-2.5 text-left transition-all" data-sound="tibetan">
+              <span class="material-symbols-outlined text-[20px] text-clinical-primary">notifications</span>
+              <div>
+                <div class="text-xs font-semibold">Cuenco Zen</div>
+                <div class="text-[10px] text-clinical-muted">440 Hz resonante</div>
+              </div>
+            </button>
+            <button aria-pressed="false" class="traj-card sound-option-btn p-3 flex flex-row items-center gap-2.5 text-left transition-all" data-sound="water">
+              <span class="material-symbols-outlined text-[20px] text-clinical-primary">water_drop</span>
+              <div>
+                <div class="text-xs font-semibold">Gota de Loto</div>
+                <div class="text-[10px] text-clinical-muted">Acuático sereno</div>
+              </div>
+            </button>
+            <button aria-pressed="false" class="traj-card sound-option-btn p-3 flex flex-row items-center gap-2.5 text-left transition-all" data-sound="click">
+              <span class="material-symbols-outlined text-[20px] text-clinical-primary">touch_app</span>
+              <div>
+                <div class="text-xs font-semibold">Click Metrónomo</div>
+                <div class="text-[10px] text-clinical-muted">Precisión seca</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button class="text-xs font-medium text-clinical-primary bg-clinical-primaryLight hover:bg-clinical-tag px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors" id="btn-test-sound">
+            <span class="material-symbols-outlined text-[15px]">volume_up</span>
+            <span class="">Test L / R Inmediato</span>
+          </button>
+          <span class="text-[11px] text-clinical-muted font-mono">WebAudio Pan Stereo</span>
+        </div>
+      </section>
+
+    </div>
+  </aside>
+</main>
+
+<!-- MODAL INFORME CLÍNICO -->
+<div class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4" id="modal-clinical">
+  <div class="bg-white max-w-lg w-full rounded-2xl shadow-xl border border-clinical-border overflow-hidden flex flex-col">
+    <div class="px-5 py-4 border-b border-clinical-border flex items-center justify-between bg-clinical-subtle/50">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-clinical-primary text-[20px]">clinical_notes</span>
+        <h3 class="font-display font-bold text-sm text-clinical-text">Informe Clínico de la Sesión EMDR</h3>
+      </div>
+      <button class="text-clinical-muted hover:text-clinical-text p-1 rounded-md" id="btn-close-clinical-modal">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+    <div class="p-5 flex flex-col gap-4 text-xs">
+      <div class="grid grid-cols-2 gap-3 p-3 bg-clinical-subtle rounded-xl border border-clinical-border/50">
+        <div>
+          <span class="text-[10px] uppercase font-semibold text-clinical-muted block font-mono">Pasadas Bilaterales</span>
+          <div class="flex items-baseline gap-1 mt-0.5">
+            <span class="font-mono text-2xl font-bold text-clinical-primary" id="report-passes-val">0</span>
+            <span class="text-clinical-muted">ciclos L/R</span>
+          </div>
+        </div>
+        <div>
+          <span class="text-[10px] uppercase font-semibold text-clinical-muted block font-mono">Tiempo de Estimulación</span>
+          <span class="font-mono text-2xl font-bold text-clinical-text mt-0.5 block" id="report-time-val">00:00</span>
+        </div>
+      </div>
+      <div>
+        <label class="font-medium text-clinical-text block mb-1.5">Notas clínicas y SUDs (Unidades Subjetivas de Perturbación):</label>
+        <textarea class="w-full text-xs p-3 bg-clinical-subtle border border-clinical-border rounded-xl focus:ring-1 focus:ring-clinical-primary focus:outline-none" placeholder="SUDs inicial 8. Tras pasada continua lineal SUD desciende a 3..." rows="4"></textarea>
+      </div>
+    </div>
+    <div class="px-5 py-3 bg-clinical-subtle/60 border-t border-clinical-border flex justify-end gap-2 text-xs">
+      <button class="px-4 py-2 bg-clinical-primary hover:bg-clinical-accent text-white rounded-lg font-medium shadow-xs" id="btn-save-clinical-notes">
+        Guardar al Historial
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT: MOTOR COMPLETO CON CINEMÁTICA ESPECIAL Y ACORDEÓN ELÁSTICO   -->
+<!-- ========================================================================= -->
+<script>
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const rawRole = (urlParams.get('role') || urlParams.get('mode') || 'therapist').toLowerCase();
+  const isPatient = rawRole === 'patient';
+  
+  let roomId = urlParams.get('room') || ('EMDR-' + Math.floor(1000 + Math.random() * 9000));
+  const badgeRoomId = document.getElementById('badge-room-id');
+  if (badgeRoomId) badgeRoomId.textContent = roomId;
+
+  // Estado de sesión
+  let isPlaying = false;
+  let isStoppingSmoothly = false;
+  let stopProgress = 0;
+  let stopStartPos = { nx: 0, ny: 0 };
+  
+  let level = 8;
+  let frequency = 0.79;
+  let amplitude = 0.85;
+  let posY = 'center';
+  let trajectory = 'horizontal';
+  let soundActive = true;
+  let soundType = 'heartbeat';
+  let passes = 0;
+  let timerSeconds = 0;
+  let timerInterval = null;
+  let animId = null;
+  let lastSide = 'center';
+  let audioCtx = null;
+  let audioUnlocked = false;
+
+  // Paleta de colores activa: salvia | bruma | lino
+  let activePalette = 'salvia';
+  const PALETTES = {
+    salvia: {
+      name: 'Paleta 01 · Salvia',
+      bg: '#faf8f5',
+      primary: '#1B3B2B',
+      accent: '#2A5B44',
+      subtle: '#E8F0EB',
+      muted: '#5B6960'
+    },
+    bruma: {
+      name: 'Paleta 02 · Bruma',
+      bg: '#F4F7F9',
+      primary: '#1C364A',
+      accent: '#2F6FA3',
+      subtle: '#E3EDF5',
+      muted: '#586A78'
+    },
+    lino: {
+      name: 'Paleta 03 · Lino',
+      bg: '#EFECE6',
+      primary: '#2E2822',
+      accent: '#6B5A49',
+      subtle: '#E4DDD3',
+      muted: '#70675E'
+    }
+  };
+
+  // Forma y estilo de estímulo
+  // circle | soft | ring | led-bar | sweep | laser | edges
+  let stimulus = 'circle';
+  let dotSize = 32;
+  let hist = [];
+  let cur = { nx: 0, ny: 0, lat: 0, env: 1, axis: 'x', thr: 0.88 };
+
+  // DOM Elements
+  const stage = document.getElementById('stage-area');
+  const stimulusEl = document.getElementById('stimulus-element');
+  const canvasFx = document.getElementById('canvas-fx');
+  const centerAnchor = document.getElementById('center-anchor');
+  const sessionTimer = document.getElementById('session-timer');
+  const btnMainPlay = document.getElementById('btn-main-play');
+  const mainPlayIcon = document.getElementById('main-play-icon');
+  const mainPlayText = document.getElementById('main-play-text');
+  
+  const intensityLevelBadge = document.getElementById('intensity-level-badge');
+  const intensityHzBadge = document.getElementById('intensity-hz-badge');
+  const quickSpeedSlider = document.getElementById('quick-speed-slider');
+  const speedAccordionWrapper = document.getElementById('speed-accordion-wrapper');
+  const accordionPipsRow = document.getElementById('accordion-pips-row');
+  
+  const statusPill = document.getElementById('status-pill');
+  const statusIndicator = document.getElementById('status-indicator');
+  const statusLabel = document.getElementById('status-label');
+  const activeTrajBadge = document.getElementById('active-traj-badge');
+  const activeKineticsBadge = document.getElementById('active-kinetics-badge');
+  const activePaletteBadge = document.getElementById('active-palette-badge');
+  const activePaletteDot = document.getElementById('active-palette-dot');
+
+  const sideLeft = document.getElementById('side-left');
+  const sideRight = document.getElementById('side-right');
+
+  const ledTrack = document.getElementById('led-track');
+  const sweepLineEl = document.getElementById('sweep-line-el');
+  const edgeLeftEl = document.getElementById('edge-left-el');
+  const edgeRightEl = document.getElementById('edge-right-el');
+
+  // Modo paciente inmersivo
+  if (isPatient) {
+    document.title = "Sesión Bilateral Paciente · Sala " + roomId;
+    const header = document.getElementById('therapist-header');
+    const bottomBar = document.getElementById('therapist-bottom-bar');
+    const configSidebar = document.getElementById('config-sidebar');
+    if (header) header.style.display = 'none';
+    if (bottomBar) bottomBar.style.display = 'none';
+    if (configSidebar) configSidebar.style.display = 'none';
+    const mainLayout = document.getElementById('main-layout');
+    if (mainLayout) mainLayout.className = 'flex-1 w-full h-full p-0 overflow-hidden relative';
+    const vBox = document.getElementById('viewport-box');
+    if (vBox) vBox.className = 'w-full h-full flex flex-col relative rounded-none border-none overflow-hidden';
+  }
+
+  // Audio Context unlock
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) audioCtx = new AudioContext();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    getAudioContext();
+    audioUnlocked = true;
+    const prompt = document.getElementById('patient-audio-prompt');
+    if (prompt) prompt.classList.add('hidden');
+  }
+  window.addEventListener('pointerdown', unlockAudio, { once: false });
+
+  function playSound(side) {
+    if (!soundActive) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      const now = ctx.currentTime;
+
+      if (soundType === 'heartbeat') {
+        osc.frequency.setValueAtTime(62, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.12);
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      } else if (soundType === 'tibetan') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      } else if (soundType === 'water') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(560, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.08);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      } else {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(750, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      }
+
+      if (panner) {
+        panner.pan.setValueAtTime(side === 'L' ? -1 : 1, now);
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(ctx.destination);
+      } else {
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+      }
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch(e) {}
+  }
+
+  function flashStereo(side) {
+    const el = side === 'L' ? sideLeft : sideRight;
+    if (el) {
+      el.style.backgroundColor = PALETTES[activePalette].primary;
+      el.style.color = '#FFFFFF';
+      setTimeout(() => {
+        el.style.backgroundColor = '';
+        el.style.color = '';
+      }, 120);
+    }
+  }
+
+  // =========================================================================
+  // SISTEMA DE PALETAS CLÍNICAS BILATERAL
+  // =========================================================================
+  function setPalette(key) {
+    if (!PALETTES[key]) return;
+    activePalette = key;
+    const pal = PALETTES[key];
+
+    stage.style.backgroundColor = pal.bg;
+    if (activePaletteBadge) activePaletteBadge.textContent = pal.name;
+    if (activePaletteDot) activePaletteDot.style.backgroundColor = pal.primary;
+    const hexLabel = document.getElementById('current-bg-hex');
+    if (hexLabel) hexLabel.textContent = pal.bg;
+
+    // Actualizar tarjetas de paleta en la pestaña
+    document.querySelectorAll('.palette-card').forEach(c => {
+      const isSel = c.dataset.palette === key;
+      c.className = isSel 
+        ? 'palette-card p-3.5 rounded-xl border-2 border-clinical-primary bg-[#FBF9F5] flex flex-col gap-2.5 cursor-pointer transition-all'
+        : 'palette-card p-3.5 rounded-xl border border-clinical-border bg-white hover:border-clinical-primary/40 flex flex-col gap-2.5 cursor-pointer transition-all';
+      const badge = c.querySelector('.badge-status');
+      if (badge) {
+        badge.className = isSel 
+          ? 'badge-status text-[9px] font-mono px-2 py-0.5 rounded bg-clinical-primary text-white font-semibold'
+          : 'badge-status text-[9px] font-mono px-2 py-0.5 rounded bg-clinical-subtle text-clinical-muted';
+        badge.textContent = isSel ? 'ACTIVA' : 'APLICAR';
+      }
+    });
+
+    applyStimulus();
+  }
+
+  document.querySelectorAll('.palette-card').forEach(c => {
+    c.addEventListener('click', () => setPalette(c.dataset.palette));
+  });
+  document.querySelectorAll('.btn-quick-bg').forEach(b => {
+    b.addEventListener('click', () => {
+      stage.style.backgroundColor = b.dataset.bg;
+      const hexLabel = document.getElementById('current-bg-hex');
+      if (hexLabel) hexLabel.textContent = b.dataset.bg;
+      paint();
+    });
+  });
+
+  // =========================================================================
+  // CINEMÁTICA Y LÓGICA DE MOVIMIENTOS
+  // 1. Pelota / Clásicos: Suave armónico sin alteraciones.
+  // 2. Traslación continua lineal (ping-pong sin ease): Barrido, Láser, Barra LED.
+  // 3. Alternancia binaria instantánea (On/Off en extremos): Luces de borde.
+  // =========================================================================
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function getEffectiveKinetics() {
+    // Si es luces de borde -> Binaria instantánea
+    if (stimulus === 'edges') return 'binary-instant';
+    // Si es experimental lineal (sweep, laser, led-bar) -> Lineal ping-pong sin ease
+    if (['sweep', 'laser', 'led-bar'].includes(stimulus)) return 'linear-pingpong';
+    // Si es clásico (circle, soft, ring) -> Mantiene la trayectoria armónica configurada
+    return 'harmonic-classic';
+  }
+
+  function computePosition(elapsed) {
+    const kinetics = getEffectiveKinetics();
+    const cycle = 2 * Math.PI * frequency * elapsed;
+
+    if (kinetics === 'binary-instant') {
+      // "Genera un estímulo visual con alternancia binaria. El elemento debe aparecer en el extremo izquierdo,
+      // desaparecer, y aparecer instantáneamente en el extremo derecho. Cero interpolación, cero transición,
+      // cero movimiento de traslación. Es un cambio de estado on/off mediante posiciones absolutas."
+      const phase = Math.sin(cycle);
+      cur.nx = phase >= 0 ? 1 : -1;
+      cur.ny = 0;
+      cur.lat = cur.nx;
+      cur.thr = 0.5; // Trigger directo
+      if (activeKineticsBadge) activeKineticsBadge.textContent = 'Binario On/Off instantáneo';
+      return;
+    }
+
+    if (kinetics === 'linear-pingpong') {
+      // "Genera un estímulo visual con movimiento de traslación continuo. El elemento debe desplazarse horizontalmente
+      // del extremo izquierdo al derecho y viceversa en un ciclo infinito. Utiliza interpolación lineal (velocidad constante)
+      // sin aceleración ni desaceleración en los bordes (cero ease-in o ease-out).
+      // El efecto debe ser una animación tipo 'ping-pong' completamente fluida cruzando toda el área visible."
+      const p = (frequency * elapsed) % 1; // 0..1 ciclo
+      // Forma de onda triangular pura: va de -1 a 1 con derivada constante (velocidad absoluta constante)
+      const tri = p < 0.5 ? (p * 4 - 1) : (3 - p * 4);
+      cur.nx = tri;
+      cur.ny = 0;
+      cur.lat = cur.nx;
+      cur.thr = 0.95;
+      if (activeKineticsBadge) activeKineticsBadge.textContent = 'Traslación continua lineal (ping-pong)';
+      return;
+    }
+
+    // Para la pelota / clásicos (circle, soft, ring): Mantiene cinemática de las 11 trayectorias
+    const T = TRAJ[trajectory] || TRAJ.horizontal;
+    const r = T.fn(cycle);
+    cur.nx = r[0];
+    cur.ny = r[1];
+    cur.axis = T.axis || 'x';
+    cur.lat = r.length > 2 ? r[2] : (cur.axis === 'y' ? r[1] : r[0]);
+    cur.thr = 0.88;
+    if (activeKineticsBadge) activeKineticsBadge.textContent = T.name + ' armónico';
+  }
+
+  // 11 Trayectorias de IMAGE_2
+  const TRAJ = {
+    horizontal: { name: 'Horizontal', fn: (t) => [Math.sin(t), 0] },
+    vertical: { name: 'Vertical', axis: 'y', fn: (t) => [0, Math.sin(t) * 0.9, Math.sin(t)] },
+    diagonal: { name: 'Diagonal', fn: (t) => [Math.sin(t), -0.75 * Math.sin(t)] },
+    alternate: { name: 'Alternante', fn: (t) => [Math.sin(t) >= 0 ? 1 : -1, 0] },
+    infinity: { 
+      name: 'Infinito', 
+      fn: (t) => {
+        const s = Math.sin(t), c = Math.cos(t), d = 1 + s * s;
+        return [(1.25 * c) / d, ((1.25 * s * c) / d) * 1.35];
+      } 
+    },
+    circular: { name: 'Circular', fn: (t) => [Math.cos(t), 0.65 * Math.sin(t)] },
+    pendulum: { 
+      name: 'Péndulo', 
+      fn: (t) => { const x = Math.sin(t); return [x, 0.42 * (x * x - 0.5)]; } 
+    },
+    arc: { 
+      name: 'Arco', 
+      fn: (t) => { const x = Math.sin(t); return [x, -0.42 * (1 - x * x) + 0.2]; } 
+    },
+    zigzag: {
+      name: 'Zigzag',
+      fn: (t) => {
+        const x = Math.sin(t);
+        const phase = ((t / (Math.PI * 2)) * 3) % 1;
+        const tri = phase < 0.5 ? (phase * 4 - 1) : (3 - phase * 4);
+        return [x, 0.45 * tri];
+      }
+    },
+    bounce: { 
+      name: 'Rebote', 
+      fn: (t) => { const x = Math.sin(t); return [x, -0.55 * Math.abs(Math.sin(2 * t)) + 0.25]; } 
+    },
+    'smooth-random': {
+      name: 'Aleatorio suave',
+      fn: (t) => [
+        Math.sin(t) * 0.75 + Math.sin(t * 0.47) * 0.25,
+        Math.sin(t * 1.63) * 0.28 + Math.cos(t * 0.71) * 0.18
+      ]
+    }
+  };
+
+  function centerFrac() { return posY === 'top' ? 0.32 : (posY === 'bottom' ? 0.68 : 0.5); }
+  function geom() {
+    const cy = centerFrac();
+    return {
+      cy: cy,
+      fx: clamp(0.5 + cur.nx * 0.5 * amplitude, 0.03, 0.97),
+      fy: clamp(cy + cur.ny * 0.38, 0.05, 0.95)
+    };
+  }
+
+  // =========================================================================
+  // APLICACIÓN DE ESTÍMULOS VISUALES Y FÍSICA
+  // =========================================================================
+  function applyStimulus() {
+    const col = PALETTES[activePalette].primary;
+
+    if (stimulus === 'circle' || stimulus === 'soft' || stimulus === 'ring') {
+      stimulusEl.classList.remove('hidden');
+      stimulusEl.style.width = dotSize + 'px';
+      stimulusEl.style.height = dotSize + 'px';
+      stimulusEl.style.backgroundColor = stimulus === 'ring' ? 'transparent' : col;
+      stimulusEl.style.border = stimulus === 'ring' ? Math.max(2, Math.round(dotSize / 7)) + 'px solid ' + col : 'none';
+      stimulusEl.style.filter = stimulus === 'soft' ? 'blur(3.5px)' : 'none';
+    } else {
+      stimulusEl.classList.add('hidden');
+    }
+
+    if (ledTrack) {
+      if (stimulus === 'led-bar') {
+        ledTrack.classList.remove('hidden');
+        ledTrack.style.top = (centerFrac() * 100) + '%';
+        ledTrack.style.left = ((1 - amplitude) * 50) + '%';
+        ledTrack.style.right = ((1 - amplitude) * 50) + '%';
+      } else {
+        ledTrack.classList.add('hidden');
+      }
+    }
+
+    if (sweepLineEl) {
+      if (stimulus === 'sweep') {
+        sweepLineEl.classList.remove('hidden');
+        sweepLineEl.style.backgroundColor = col;
+        sweepLineEl.style.width = Math.max(3, Math.round(dotSize / 7)) + 'px';
+        sweepLineEl.style.boxShadow = `0 0 14px ${col}`;
+      } else {
+        sweepLineEl.classList.add('hidden');
+      }
+    }
+
+    if (edgeLeftEl && edgeRightEl) {
+      if (stimulus === 'edges') {
+        edgeLeftEl.classList.remove('hidden');
+        edgeRightEl.classList.remove('hidden');
+        edgeLeftEl.style.backgroundColor = col;
+        edgeRightEl.style.backgroundColor = col;
+        edgeLeftEl.style.width = Math.max(20, dotSize * 0.9) + 'px';
+        edgeRightEl.style.width = Math.max(20, dotSize * 0.9) + 'px';
+      } else {
+        edgeLeftEl.classList.add('hidden');
+        edgeRightEl.classList.add('hidden');
+      }
+    }
+
+    paint();
+  }
+
+  function paint() {
+    const g = geom();
+    const col = PALETTES[activePalette].primary;
+
+    if (stimulus === 'circle' || stimulus === 'soft' || stimulus === 'ring') {
+      stimulusEl.style.left = (g.fx * 100) + '%';
+      stimulusEl.style.top = (g.fy * 100) + '%';
+    }
+
+    // 1. Barra LED
+    if (stimulus === 'led-bar' && ledTrack) {
+      const dots = ledTrack.querySelectorAll('.led-bar-dot');
+      const total = dots.length;
+      const normIdx = ((cur.nx + 1) / 2) * (total - 1);
+      dots.forEach((d, i) => {
+        const dist = Math.abs(i - normIdx);
+        if (dist < 0.75) {
+          d.style.backgroundColor = col;
+          d.style.transform = 'scale(1.45)';
+          d.style.boxShadow = `0 0 12px ${col}`;
+        } else if (dist < 1.6) {
+          d.style.backgroundColor = col;
+          d.style.opacity = '0.35';
+          d.style.transform = 'scale(1.08)';
+          d.style.boxShadow = 'none';
+        } else {
+          d.style.backgroundColor = 'rgba(0,0,0,0.12)';
+          d.style.opacity = '1';
+          d.style.transform = 'scale(1)';
+          d.style.boxShadow = 'none';
+        }
+      });
+    }
+
+    // 2. Línea de barrido (Ping-pong lineal)
+    if (stimulus === 'sweep' && sweepLineEl) {
+      sweepLineEl.style.left = (g.fx * 100) + '%';
+    }
+
+    // 3. Luces de borde (Binario On/Off instantáneo)
+    if (stimulus === 'edges' && edgeLeftEl && edgeRightEl) {
+      // Estado binario puro: izquierdo encendido y derecho apagado, o viceversa
+      if (cur.lat <= 0) {
+        edgeLeftEl.style.opacity = '1';
+        edgeLeftEl.style.transform = 'scale(1.15)';
+        edgeLeftEl.style.boxShadow = `0 0 20px ${col}`;
+
+        edgeRightEl.style.opacity = '0.04';
+        edgeRightEl.style.transform = 'scale(1)';
+        edgeRightEl.style.boxShadow = 'none';
+      } else {
+        edgeRightEl.style.opacity = '1';
+        edgeRightEl.style.transform = 'scale(1.15)';
+        edgeRightEl.style.boxShadow = `0 0 20px ${col}`;
+
+        edgeLeftEl.style.opacity = '0.04';
+        edgeLeftEl.style.transform = 'scale(1)';
+        edgeLeftEl.style.boxShadow = 'none';
+      }
+    }
+
+    // Canvas Láser
+    const W = canvasFx.clientWidth, H = canvasFx.clientHeight;
+    if (W && H) {
+      const dpr = window.devicePixelRatio || 1;
+      if (canvasFx.width !== Math.round(W * dpr) || canvasFx.height !== Math.round(H * dpr)) {
+        canvasFx.width = Math.round(W * dpr);
+        canvasFx.height = Math.round(H * dpr);
+      }
+      const ctx = canvasFx.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      if (stimulus === 'laser') {
+        const ox = W * 0.5, oy = H * 0.04;
+        const tx = g.fx * W, ty = g.fy * H;
+        
+        ctx.save();
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = 0.25;
+        ctx.lineWidth = Math.max(3, dotSize * 0.35);
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+
+        ctx.globalAlpha = 0.95;
+        ctx.lineWidth = Math.max(1.5, dotSize * 0.12);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(tx, ty, Math.max(5, dotSize * 0.22), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  // =========================================================================
+  // ANIMACIÓN PRINCIPAL CON CONTROL SUAVE AL CENTRO
+  // =========================================================================
+  let startTime = null;
+  let lastTimestamp = null;
+
+  function render(timestamp) {
+    if (!startTime) startTime = timestamp;
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const delta = (timestamp - lastTimestamp) / 1000;
+    lastTimestamp = timestamp;
+
+    if (isStoppingSmoothly) {
+      stopProgress += delta * 1.5;
+      if (stopProgress >= 1) {
+        isStoppingSmoothly = false;
+        isPlaying = false;
+        cur.nx = 0; cur.ny = 0;
+        paint();
+        finalizePauseState();
+        return;
+      } else {
+        const ease = 1 - Math.pow(1 - stopProgress, 3);
+        cur.nx = stopStartPos.nx * (1 - ease);
+        cur.ny = stopStartPos.ny * (1 - ease);
+        paint();
+        animId = requestAnimationFrame(render);
+        return;
+      }
+    }
+
+    const elapsed = (timestamp - startTime) / 1000;
+    computePosition(elapsed);
+    paint();
+
+    // Detección L/R y Audio
+    if (cur.lat <= -cur.thr && lastSide !== 'left') {
+      lastSide = 'left';
+      passes++;
+      flashStereo('L');
+      playSound('L');
+    } else if (cur.lat >= cur.thr && lastSide !== 'right') {
+      lastSide = 'right';
+      passes++;
+      flashStereo('R');
+      playSound('R');
+    }
+
+    if (isPlaying) {
+      animId = requestAnimationFrame(render);
+    }
+  }
+
+  function startSession() {
+    if (isPlaying) return;
+    if (!isPatient && window.EMDRRemoteEnabled && !window.EMDRPeerConnected) {
+      if (statusLabel) statusLabel.textContent = 'Esperando conexión del paciente';
+      return;
+    }
+    getAudioContext();
+    isPlaying = true;
+    isStoppingSmoothly = false;
+    
+    if (mainPlayIcon) mainPlayIcon.textContent = 'pause';
+    if (mainPlayText) mainPlayText.textContent = 'Pausar Suave';
+    if (btnMainPlay) {
+      btnMainPlay.classList.remove('bg-clinical-primary');
+      btnMainPlay.classList.add('bg-[#593E2B]');
+    }
+    
+    if (statusLabel) statusLabel.textContent = 'Estimulando';
+    if (statusIndicator) statusIndicator.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-ping';
+    if (statusPill) statusPill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-900 border border-emerald-200/60 shadow-xs';
+    if (centerAnchor) centerAnchor.style.opacity = '0';
+
+    if (!timerInterval) {
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        const m = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const s = String(timerSeconds % 60).padStart(2, '0');
+        if (sessionTimer) sessionTimer.textContent = m + ':' + s;
+      }, 1000);
+    }
+    startTime = null;
+    lastTimestamp = null;
+    animId = requestAnimationFrame(render);
+    if (!isPatient) window.dispatchEvent(new CustomEvent('emdr:action',{detail:'start'}));
+  }
+
+  function requestSmoothPause() {
+    if (!isPlaying || isStoppingSmoothly) return;
+    isStoppingSmoothly = true;
+    stopProgress = 0;
+    stopStartPos = { nx: cur.nx, ny: cur.ny };
+    if (!isPatient) window.dispatchEvent(new CustomEvent('emdr:action',{detail:'pause'}));
+    if (statusLabel) statusLabel.textContent = 'Retornando al centro...';
+    if (statusIndicator) statusIndicator.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+  }
+
+  function finalizePauseState() {
+    if (mainPlayIcon) mainPlayIcon.textContent = 'play_arrow';
+    if (mainPlayText) mainPlayText.textContent = 'Reanudar';
+    if (btnMainPlay) {
+      btnMainPlay.classList.remove('bg-[#593E2B]');
+      btnMainPlay.classList.add('bg-clinical-primary');
+    }
+    
+    if (statusLabel) statusLabel.textContent = 'En Reposo';
+    if (statusIndicator) statusIndicator.className = 'w-2 h-2 rounded-full bg-neutral-400';
+    if (statusPill) statusPill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/5 text-clinical-text border border-black/5';
+    if (centerAnchor) centerAnchor.style.opacity = '1';
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    if (animId) cancelAnimationFrame(animId);
+  }
+
+  if (btnMainPlay) {
+    btnMainPlay.addEventListener('click', () => {
+      if (isPlaying && !isStoppingSmoothly) requestSmoothPause();
+      else startSession();
+    });
+  }
+
+  if (btnResetTimer) {
+    btnResetTimer.addEventListener('click', () => {
+      if (isPlaying) requestSmoothPause();
+      timerSeconds = 0;
+      passes = 0;
+      if (sessionTimer) sessionTimer.textContent = '00:00';
+      cur.nx = 0; cur.ny = 0; cur.lat = 0;
+      paint();
+    });
+  }
+
+  // =========================================================================
+  // ACORDEÓN ELÁSTICO DE INTENSIDAD (SE EXPONDE AL INTERACTUAR / AUMENTAR NIVEL)
+  // =========================================================================
+  function renderPips() {
+    if (!accordionPipsRow) return;
+    accordionPipsRow.innerHTML = '';
+    for (let i = 1; i <= 20; i++) {
+      const pip = document.createElement('div');
+      pip.className = `step-pip h-1.5 flex-1 rounded-full ${i <= level ? 'bg-clinical-primary' : 'bg-neutral-300'}`;
+      accordionPipsRow.appendChild(pip);
+    }
+  }
+
+  function expandSpeedAccordion() {
+    if (!speedAccordionWrapper) return;
+    speedAccordionWrapper.classList.add('expanded');
+    if (accordionPipsRow) accordionPipsRow.classList.remove('hidden');
+    renderPips();
+  }
+
+  function collapseSpeedAccordionDelayed() {
+    setTimeout(() => {
+      if (!speedAccordionWrapper) return;
+      speedAccordionWrapper.classList.remove('expanded');
+      if (accordionPipsRow) accordionPipsRow.classList.add('hidden');
+    }, 2800);
+  }
+
+  function updateSpeed(newLvl) {
+    level = Math.max(1, Math.min(20, newLvl));
+    frequency = 0.20 + ((level - 1) / 19) * 1.60;
+    
+    if (intensityLevelBadge) intensityLevelBadge.textContent = 'Nvl ' + level;
+    if (intensityHzBadge) intensityHzBadge.textContent = frequency.toFixed(2) + ' Hz';
+    if (quickSpeedSlider) quickSpeedSlider.value = level;
+    
+    expandSpeedAccordion();
+    collapseSpeedAccordionDelayed();
+    renderPips();
+  }
+
+  if (quickSpeedSlider) {
+    quickSpeedSlider.addEventListener('input', (e) => updateSpeed(parseInt(e.target.value, 10)));
+    quickSpeedSlider.addEventListener('focus', expandSpeedAccordion);
+    quickSpeedSlider.addEventListener('blur', collapseSpeedAccordionDelayed);
+  }
+  const btnSpeedMinus = document.getElementById('btn-speed-minus');
+  const btnSpeedPlus = document.getElementById('btn-speed-plus');
+  if (btnSpeedMinus) btnSpeedMinus.addEventListener('click', () => updateSpeed(level - 1));
+  if (btnSpeedPlus) btnSpeedPlus.addEventListener('click', () => updateSpeed(level + 1));
+
+  // =========================================================================
+  // SELECTORES DE FORMA Y TRAYECTORIA
+  // =========================================================================
+  document.querySelectorAll('.stim-shape-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.stim-shape-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      stimulus = btn.dataset.shape;
+      applyStimulus();
+    });
+  });
+
+  function setTrajectory(key) {
+    if (!TRAJ[key]) return;
+    trajectory = key;
+    lastSide = 'center';
+    if (activeTrajBadge) activeTrajBadge.textContent = TRAJ[key].name;
+
+    document.querySelectorAll('.quick-traj-btn').forEach(b => {
+      const isSel = b.dataset.traj === key;
+      b.className = isSel
+        ? 'quick-traj-btn p-1.5 rounded-lg text-clinical-primary bg-white shadow-2xs text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all'
+        : 'quick-traj-btn p-1.5 rounded-lg text-clinical-muted hover:text-clinical-text text-[11px] font-medium flex items-center gap-1 px-2.5 transition-all';
+    });
+
+    document.querySelectorAll('.traj-select-card').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.traj === key));
+    });
+
+    if (!isPlaying) { computePosition(0); paint(); }
+  }
+
+  document.querySelectorAll('.quick-traj-btn, .traj-select-card').forEach(b => {
+    b.addEventListener('click', () => setTrajectory(b.dataset.traj));
+  });
+
+  // Slider de tamaño
+  const sliderSize = document.getElementById('slider-dot-size');
+  if (sliderSize) {
+    sliderSize.addEventListener('input', (e) => {
+      dotSize = parseInt(e.target.value, 10);
+      const lbl = document.getElementById('size-val-label');
+      if (lbl) lbl.textContent = dotSize + ' px';
+      applyStimulus();
+    });
+  }
+
+  // Audio selector
+  const checkSound = document.getElementById('checkbox-sound-active');
+  if (checkSound) checkSound.addEventListener('change', (e) => soundActive = e.target.checked);
+
+  document.querySelectorAll('.sound-option-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.sound-option-btn').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      soundType = b.dataset.sound;
+      playSound('L');
+    });
+  });
+
+  const btnTestSound = document.getElementById('btn-test-sound');
+  if (btnTestSound) {
+    btnTestSound.addEventListener('click', () => {
+      playSound('L');
+      setTimeout(() => playSound('R'), 260);
+    });
+  }
+
+  // Pestañas de configuración lateral
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      tabBtns.forEach(b => {
+        b.classList.remove('border-clinical-primary', 'text-clinical-primary', 'font-semibold');
+        b.classList.add('border-transparent', 'text-clinical-muted');
+      });
+      btn.classList.add('border-clinical-primary', 'text-clinical-primary', 'font-semibold');
+      btn.classList.remove('border-transparent', 'text-clinical-muted');
+
+      tabPanels.forEach(p => {
+        if (p.id === 'tab-' + tabId + '-content') p.classList.remove('hidden');
+        else p.classList.add('hidden');
+      });
+    });
+  });
+
+  function toggleSidebar() {
+    if (!configSidebar) return;
+    configSidebar.classList.toggle('hidden');
+    setTimeout(paint, 50);
+  }
+  const btnToggleConfig = document.getElementById('btn-toggle-config-panel');
+  const btnCloseSidebar = document.getElementById('btn-close-config-sidebar');
+  if (btnToggleConfig) btnToggleConfig.addEventListener('click', toggleSidebar);
+  if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', toggleSidebar);
+
+  // Modal informe clínico
+  const modalClinical = document.getElementById('modal-clinical');
+  const btnOpenReport = document.getElementById('btn-open-clinical-modal');
+  const btnCloseReport = document.getElementById('btn-close-clinical-modal');
+  const btnSaveNotes = document.getElementById('btn-save-clinical-notes');
+  if (btnOpenReport) {
+    btnOpenReport.addEventListener('click', () => {
+      const pVal = document.getElementById('report-passes-val');
+      const tVal = document.getElementById('report-time-val');
+      if (pVal) pVal.textContent = passes;
+      if (tVal) tVal.textContent = sessionTimer.textContent;
+      if (modalClinical) modalClinical.classList.remove('hidden');
+    });
+  }
+  if (btnCloseReport) btnCloseReport.addEventListener('click', () => modalClinical.classList.add('hidden'));
+  if (btnSaveNotes) btnSaveNotes.addEventListener('click', () => modalClinical.classList.add('hidden'));
+
+  // Atajos de teclado
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (isPlaying && !isStoppingSmoothly) requestSmoothPause();
+      else startSession();
+    } else if (e.code === 'ArrowUp' || e.key === '+') {
+      e.preventDefault();
+      updateSpeed(level + 1);
+    } else if (e.code === 'ArrowDown' || e.key === '-') {
+      e.preventDefault();
+      updateSpeed(level - 1);
+    }
+  });
+
+  // API de integración con el controlador remoto; solo expone comandos locales validados.
+  function emergencyStop() {
+    isPlaying = false; isStoppingSmoothly = false;
+    if (animId) cancelAnimationFrame(animId);
+    animId = null;
+    cur.nx = 0; cur.ny = 0; cur.lat = 0;
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    finalizePauseState(); paint();
+  }
+  function currentSettings() {
+    return {
+      level, trajectory, stimulus, soundType, soundActive, dotSize,
+      palette: activePalette, bg: document.getElementById('current-bg-hex')?.textContent?.trim() || '#faf8f5'
+    };
+  }
+  window.EMDRPrismaEngine = {
+    settings: currentSettings,
+    playing: () => isPlaying,
+    applySettings(next) {
+      if (next.level != null) updateSpeed(next.level);
+      if (next.trajectory != null) setTrajectory(next.trajectory);
+      if (next.palette != null) setPalette(next.palette);
+      if (next.bg != null) { stage.style.backgroundColor = next.bg; document.getElementById('current-bg-hex').textContent = next.bg; }
+      if (next.stimulus != null) document.querySelector(`.stim-shape-btn[data-shape="${next.stimulus}"]`)?.click();
+      if (next.dotSize != null) { const slider=document.getElementById('slider-dot-size'); if(slider){slider.value=next.dotSize;slider.dispatchEvent(new Event('input',{bubbles:true}));} }
+      if (next.soundActive != null) { soundActive=next.soundActive; const box=document.getElementById('checkbox-sound-active');if(box)box.checked=next.soundActive; }
+      if (next.soundType != null) document.querySelector(`.sound-option-btn[data-sound="${next.soundType}"]`)?.click();
+      paint();
+    },
+    start: () => { if(!isPlaying) startSession(); },
+    pause: emergencyStop,
+    stop: emergencyStop,
+    enableAudio: () => unlockAudio()
+  };
+  // Emitir cambios del panel después de que sus propios manejadores los procesen.
+  ['click','change','input'].forEach(name => document.addEventListener(name,event => {
+    if (!isPatient && event.target.closest?.('#config-sidebar, #therapist-bottom-bar, #therapist-header')) {
+      queueMicrotask(() => window.dispatchEvent(new CustomEvent('emdr:settings-changed')));
+    }
+  }));
+
+  // Inicialización
+  setPalette('salvia');
+  updateSpeed(8);
+  applyStimulus();
+  window.addEventListener('resize', paint);
+})();
+</script>
+
+
+
+
+<script>(function() { const PRESET_TEMPLATES = { 'trauma-agudo': { id: 'trauma-agudo', name: 'Trauma Agudo & Regulación', palette: 'salvia', bg: '#faf8f5', stimulus: 'circle', dotSize: 32, trajectory: 'horizontal', level: 6, frequency: 0.65, amplitude: 0.80, soundActive: true, soundType: 'heartbeat' }, 'foco-nitido': { id: 'foco-nitido', name: 'Foco Nítido & Desbloqueo', palette: 'bruma', bg: '#F4F7F9', stimulus: 'laser', dotSize: 30, trajectory: 'infinity', level: 10, frequency: 0.95, amplitude: 0.90, soundActive: true, soundType: 'tibetan' }, 'hipersensibilidad': { id: 'hipersensibilidad', name: 'Hipersensibilidad & Calma Táctil', palette: 'lino', bg: '#EFECE6', stimulus: 'led-bar', dotSize: 28, trajectory: 'pendulum', level: 5, frequency: 0.55, amplitude: 0.70, soundActive: true, soundType: 'water' }, 'alternancia-rapida': { id: 'alternancia-rapida', name: 'Alternancia Rápida / Fobia', palette: 'salvia', bg: '#1F2723', stimulus: 'edges', dotSize: 34, trajectory: 'alternate', level: 12, frequency: 1.15, amplitude: 0.95, soundActive: true, soundType: 'click' } }; function loadCustomTemplates() { try { const raw = localStorage.getItem('bilateral_custom_templates'); return raw ? JSON.parse(raw) : []; } catch(e) { return []; } } function saveCustomTemplates(arr) { try { localStorage.setItem('bilateral_custom_templates', JSON.stringify(arr)); } catch(e) {} } function applyTemplate(tpl) { if (!tpl) return; const palCard = document.querySelector(`.palette-card[data-palette="${tpl.palette}"]`); if (palCard) palCard.click(); const bgBtn = document.querySelector(`.btn-quick-bg[data-bg="${tpl.bg}"]`); if (bgBtn) bgBtn.click(); const stimBtn = document.querySelector(`.stim-shape-btn[data-shape="${tpl.stimulus}"]`); if (stimBtn) stimBtn.click(); const sizeSlider = document.getElementById('slider-dot-size'); if (sizeSlider && tpl.dotSize) { sizeSlider.value = tpl.dotSize; sizeSlider.dispatchEvent(new Event('input', { bubbles: true })); } const trajBtn = document.querySelector(`.traj-select-card[data-traj="${tpl.trajectory}"]`) || document.querySelector(`.quick-traj-btn[data-traj="${tpl.trajectory}"]`); if (trajBtn) trajBtn.click(); const speedSlider = document.getElementById('quick-speed-slider'); if (speedSlider && tpl.level) { speedSlider.value = tpl.level; speedSlider.dispatchEvent(new Event('input', { bubbles: true })); } const soundBox = document.getElementById('checkbox-sound-active'); if (soundBox && typeof tpl.soundActive === 'boolean') { if (soundBox.checked !== tpl.soundActive) { soundBox.checked = tpl.soundActive; soundBox.dispatchEvent(new Event('change', { bubbles: true })); } } const soundBtn = document.querySelector(`.sound-option-btn[data-sound="${tpl.soundType}"]`); if (soundBtn) soundBtn.click(); const headerLabel = document.getElementById('header-active-template-name'); if (headerLabel) headerLabel.textContent = tpl.name; document.querySelectorAll('[data-apply-template]').forEach(btn => { const isCur = btn.dataset.applyTemplate === tpl.id; btn.className = isCur ? 'px-2.5 py-1 rounded-lg bg-clinical-primary text-white text-[11px] font-semibold shrink-0 shadow-2xs transition-all' : 'px-2.5 py-1 rounded-lg bg-clinical-subtle hover:bg-clinical-primary hover:text-white text-clinical-text text-[11px] font-semibold shrink-0 transition-all'; btn.textContent = isCur ? 'Activa' : 'Cargar'; }); } function renderCustomList() { const listEl = document.getElementById('custom-templates-list'); if (!listEl) return; const customList = loadCustomTemplates(); if (customList.length === 0) { listEl.innerHTML = '<div class="text-[11px] text-clinical-muted italic" id="empty-custom-templates-msg">No hay perfiles personalizados guardados aún.</div>'; return; } listEl.innerHTML = ''; customList.forEach((c, idx) => { const item = document.createElement('div'); item.className = 'p-2.5 rounded-xl border border-clinical-border bg-white flex items-center justify-between gap-2 shadow-2xs'; item.innerHTML = `<div class="flex-1 min-w-0"><div class="text-xs font-semibold text-clinical-text truncate">${c.name}</div><div class="text-[10px] text-clinical-muted font-mono truncate">Nvl ${c.level} · ${c.trajectory} · ${c.stimulus}</div></div><div class="flex items-center gap-1"><button class="px-2 py-0.5 rounded bg-clinical-subtle hover:bg-clinical-primary hover:text-white text-[11px] font-semibold transition-all" data-custom-idx="${idx}">Cargar</button><button class="text-clinical-muted hover:text-red-600 p-1 text-xs" data-delete-idx="${idx}"><span class="material-symbols-outlined text-[15px]">delete</span></button></div>`; listEl.appendChild(item); }); listEl.querySelectorAll('[data-custom-idx]').forEach(b => { b.addEventListener('click', () => { const idx = parseInt(b.dataset.customIdx, 10); const c = loadCustomTemplates()[idx]; if (c) applyTemplate(c); }); }); listEl.querySelectorAll('[data-delete-idx]').forEach(b => { b.addEventListener('click', () => { const idx = parseInt(b.dataset.deleteIdx, 10); const arr = loadCustomTemplates(); arr.splice(idx, 1); saveCustomTemplates(arr); renderCustomList(); }); }); } document.addEventListener('DOMContentLoaded', () => { document.querySelectorAll('[data-apply-template]').forEach(btn => { btn.addEventListener('click', () => { const key = btn.dataset.applyTemplate; if (PRESET_TEMPLATES[key]) applyTemplate(PRESET_TEMPLATES[key]); }); }); const btnSave = document.getElementById('btn-save-custom-template'); const inputName = document.getElementById('input-custom-template-name'); if (btnSave && inputName) { btnSave.addEventListener('click', () => { const name = inputName.value.trim() || ('Perfil Paciente ' + (loadCustomTemplates().length + 1)); const slider = document.getElementById('quick-speed-slider'); const lvl = slider ? parseInt(slider.value, 10) : 8; const activePalBtn = document.querySelector('.palette-card.border-2'); const pal = activePalBtn ? activePalBtn.dataset.palette : 'salvia'; const activeStimBtn = document.querySelector('.stim-shape-btn[aria-pressed="true"]'); const stim = activeStimBtn ? activeStimBtn.dataset.shape : 'circle'; const activeTrajBtn = document.querySelector('.traj-select-card[aria-pressed="true"]') || document.querySelector('.quick-traj-btn.text-clinical-primary'); const traj = activeTrajBtn ? activeTrajBtn.dataset.traj : 'horizontal'; const bgLabel = document.getElementById('current-bg-hex'); const bg = bgLabel ? bgLabel.textContent.trim() : '#faf8f5'; const sizeSlider = document.getElementById('slider-dot-size'); const dotSize = sizeSlider ? parseInt(sizeSlider.value, 10) : 32; const soundCheck = document.getElementById('checkbox-sound-active'); const activeSoundBtn = document.querySelector('.sound-option-btn[aria-pressed="true"]'); const sound = activeSoundBtn ? activeSoundBtn.dataset.sound : 'heartbeat'; const newTpl = { id: 'custom-' + Date.now(), name: name, palette: pal, bg: bg, stimulus: stim, dotSize: dotSize, trajectory: traj, level: lvl, soundActive: soundCheck ? soundCheck.checked : true, soundType: sound }; const arr = loadCustomTemplates(); arr.unshift(newTpl); saveCustomTemplates(arr); inputName.value = ''; renderCustomList(); applyTemplate(newTpl); }); } const btnHeaderMenu = document.getElementById('btn-quick-template-menu'); if (btnHeaderMenu) { btnHeaderMenu.addEventListener('click', () => { const sidebar = document.getElementById('config-sidebar'); if (sidebar && sidebar.classList.contains('hidden')) { sidebar.classList.remove('hidden'); } const tabBtn = document.querySelector('.tab-btn[data-tab="templates"]'); if (tabBtn) tabBtn.click(); }); } renderCustomList(); }); })();</script><script src="/realtime.js" defer></script></body></html>

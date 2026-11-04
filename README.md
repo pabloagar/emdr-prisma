@@ -32,6 +32,14 @@ npm run deploy
 
 El despliegue entrega una URL bajo `workers.dev` si está habilitada para el Worker. La primera migración crea la clase `SessionRoom` (SQLite Durable Object). Según la cuenta, puede haber límites/cuotas.
 
+### Despliegue conectado a GitHub
+
+En Cloudflare Workers Builds: rama `main`, directorio raíz `/`, comando de compilación vacío y comando de despliegue `npx wrangler deploy`. No hay una compilación de frontend previa. La configuración habilita la dirección `workers.dev`.
+
+El repositorio debe incluir **las carpetas completas** `src/`, `public/` y `test/`, además de los archivos de la raíz. Subir solo los archivos sueltos deja fuera la aplicación. Si aparece `The entry-point file at "src/worker.js" was not found`, comprueba que `src/worker.js` y `public/index.html` existan en GitHub en la rama que Cloudflare despliega.
+
+Antes de publicar: `npm run check`, `npm test` y `npx wrangler deploy --dry-run`. El último comando valida el paquete sin subirlo a Cloudflare. Para una carga manual a GitHub, arrastra también las carpetas desde el explorador; seleccionar únicamente los archivos de la raíz no las incluye.
+
 ## Uso
 
 1. Abre la URL del Worker sin parámetros: panel del profesional.
