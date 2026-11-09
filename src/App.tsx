@@ -158,9 +158,17 @@ export const App: React.FC = () => {
     };
   }, [passes, sessionBlocks.length, settings]);
 
-  const handleRemotePause = useCallback(() => {
-    setIsStoppingSmoothly(true);
-  }, []);
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+
+  const handleRemotePause = useCallback(
+    (reason?: string) => {
+      // Solo pausar (vuelta suave al centro) si realmente estaba estimulando.
+      if (isPlayingRef.current) setIsStoppingSmoothly(true);
+      if (isPatient && reason === 'disconnected') setShowDisconnectedOverlay(true);
+    },
+    [isPatient]
+  );
 
   const handleRemoteStop = useCallback((reason?: string) => {
     setIsPlaying(false);
@@ -185,11 +193,17 @@ export const App: React.FC = () => {
   } = useRealtimeSync({
     role,
     settings,
+    isPlaying: isPlaying && !isStoppingSmoothly,
     onApplyRemoteSettings: handleApplyRemoteSettings,
     onRemoteStart: handleRemoteStart,
     onRemotePause: handleRemotePause,
     onRemoteStop: handleRemoteStop
   });
+
+  // Al recuperar la conexión con el profesional, el aviso de pausa del paciente se retira solo.
+  useEffect(() => {
+    if (isPatient && peerConnected) setShowDisconnectedOverlay(false);
+  }, [isPatient, peerConnected]);
 
   // Código corto para mostrar en la cabecera (el identificador real es un UUID).
   const roomLabel = credentials?.roomId ? credentials.roomId.slice(0, 8).toUpperCase() : 'Sin sala';

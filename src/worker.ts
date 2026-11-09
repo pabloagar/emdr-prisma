@@ -29,6 +29,8 @@ type Role = 'therapist' | 'patient';
 const ROOM_TTL = 2 * 60 * 60 * 1000;
 const HEARTBEAT_CHECK = 7000;
 const HEARTBEAT_TIMEOUT = 15000;
+// Un cliente envía latidos cada 4 s; sin mensajes en este plazo se considera desconectado.
+const PEER_STALE_MS = 15000;
 const ROOM_ID = /^[a-f0-9-]{36}$/;
 const TOKEN = /^[a-f0-9]{64}$/;
 const encoder = new TextEncoder();
@@ -116,12 +118,35 @@ export class SessionRoom extends DurableObject<Env> {
     return this.ctx.storage.get<RoomMeta>('meta');
   }
 
+  private attachment(ws: WebSocket): { role?: Role; lastSeen?: number } {
+    return (ws.deserializeAttachment() as { role?: Role; lastSeen?: number } | null) ?? {};
+  }
+
   private roleOf(ws: WebSocket): Role | undefined {
-    return (ws.deserializeAttachment() as { role?: Role } | null)?.role;
+    return this.attachment(ws).role;
+  }
+
+  private isStale(ws: WebSocket): boolean {
+    const seen = this.attachment(ws).lastSeen ?? 0;
+    return Date.now() - seen > PEER_STALE_MS;
   }
 
   private has(role: Role, except?: WebSocket): boolean {
-    return this.ctx.getWebSockets().some((ws) => ws !== except && this.roleOf(ws) === role);
+    return this.ctx.getWebSockets().some((ws) => ws !== except && this.roleOf(ws) === role && !this.isStale(ws));
+  }
+
+  /** Cierra conexiones que dejaron de responder (red caída sin cierre) y avisa del cambio. */
+  private async pruneStale() {
+    const stale = this.ctx.getWebSockets().filter((ws) => this.isStale(ws));
+    if (!stale.length) return;
+    for (const ws of stale) {
+      await this.disconnected(ws);
+      try {
+        ws.close(4008, 'Sin respuesta');
+      } catch {
+        /* ya cerrada */
+      }
+    }
   }
 
   private send(ws: WebSocket, payload: Record<string, unknown>) {
@@ -204,7 +229,7 @@ export class SessionRoom extends DurableObject<Env> {
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ role });
+    server.serializeAttachment({ role, lastSeen: Date.now() });
     this.snapshot(server, meta);
     this.presence();
     return new Response(null, { status: 101, webSocket: client });
@@ -219,6 +244,8 @@ export class SessionRoom extends DurableObject<Env> {
     }
 
     const role = this.roleOf(ws);
+    ws.serializeAttachment({ role, lastSeen: Date.now() });
+    await this.pruneStale();
     const meta = await this.meta();
     if (!meta || Date.now() > meta.expiresAt) {
       ws.close(4001, 'Sala caducada');
@@ -265,9 +292,6 @@ export class SessionRoom extends DurableObject<Env> {
     }
 
     if (data.type === 'start' || data.type === 'pause') {
-      if (data.type === 'start' && !this.has('patient')) {
-        return this.send(ws, { type: 'error', message: 'El paciente no está conectado' });
-      }
       meta.running = data.type === 'start';
       meta.lastHeartbeat = Date.now();
       meta.revision++;

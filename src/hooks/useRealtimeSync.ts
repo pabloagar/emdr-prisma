@@ -4,9 +4,11 @@ import { Role, RemoteCredentials, SessionSettings } from '../types';
 interface UseRealtimeSyncProps {
   role: Role;
   settings: SessionSettings;
+  /** Solo profesional: si está estimulando, se publica al (re)conectar para que el paciente entre sincronizado. */
+  isPlaying?: boolean;
   onApplyRemoteSettings: (next: Partial<SessionSettings>) => void;
   onRemoteStart: () => void;
-  onRemotePause: () => void;
+  onRemotePause: (reason?: string) => void;
   onRemoteStop: (reason?: string) => void;
 }
 
@@ -55,6 +57,7 @@ function readInitialCredentials(role: Role): RemoteCredentials | null {
 export function useRealtimeSync({
   role,
   settings,
+  isPlaying = false,
   onApplyRemoteSettings,
   onRemoteStart,
   onRemotePause,
@@ -72,6 +75,8 @@ export function useRealtimeSync({
 
   // Refs para leer el estado más reciente sin volver a abrir el WebSocket en cada cambio.
   const settingsRef = useRef(settings);
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
   const handlersRef = useRef({ onApplyRemoteSettings, onRemoteStart, onRemotePause, onRemoteStop });
   settingsRef.current = settings;
   handlersRef.current = { onApplyRemoteSettings, onRemoteStart, onRemotePause, onRemoteStop };
@@ -117,9 +122,11 @@ export function useRealtimeSync({
           if (isPatient) h.onRemoteStart();
           break;
         case 'pause':
-          if (isPatient) h.onRemotePause();
           if (msg.reason === 'heartbeat_timeout' || msg.reason === 'therapist_disconnected') {
+            if (isPatient) h.onRemotePause('disconnected');
             setSyncStatus('Pausa automática: se perdió la conexión del terapeuta');
+          } else if (isPatient) {
+            h.onRemotePause();
           }
           break;
         case 'stop':
@@ -158,19 +165,82 @@ export function useRealtimeSync({
 
       const ws = new WebSocket(url);
       socketRef.current = ws;
+      let lastHeardAt = Date.now();
+      let dropped = false;
+      // Si la conexión no se abre en 8 s (red caída), se descarta y se reintenta.
+      const connectTimer = window.setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          onDropped(1006);
+          try {
+            ws.close();
+          } catch {
+            /* nada que cerrar */
+          }
+        }
+      }, 8000);
+
+      // Conexión perdida (cierre normal o detectado por el vigilante).
+      const onDropped = (code: number) => {
+        if (dropped) return;
+        dropped = true;
+        window.clearTimeout(connectTimer);
+        window.clearInterval(pingTimer);
+        if (socketRef.current === ws) socketRef.current = null;
+        setPeerConnected(false);
+        if (disposed) return;
+        // Seguridad: si el paciente pierde su propia conexión, detiene suavemente el estímulo.
+        if (isPatient) handlersRef.current.onRemotePause('disconnected');
+        if (code === 4009) {
+          setSyncStatus('Sesión abierta en otra pestaña o dispositivo');
+          return;
+        }
+        if (FATAL_CLOSE_CODES.has(code)) {
+          setSyncStatus(isPatient ? 'La sala caducó. Pide un enlace nuevo al terapeuta.' : 'La sala caducó. Crea una sala nueva.');
+          return;
+        }
+        if (attempt >= RECONNECT_DELAYS.length) {
+          setSyncStatus(
+            isPatient
+              ? 'Sin conexión con la sala. Reintentando… (si persiste, pide un enlace nuevo)'
+              : 'Sin conexión con la sala. Reintentando… (si persiste, crea una sala nueva)'
+          );
+        }
+        // Reintentos indefinidos con espera creciente (máximo 15 s).
+        const delay = RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
+        attempt++;
+        retryTimer = window.setTimeout(open, delay);
+      };
 
       ws.onopen = () => {
+        window.clearTimeout(connectTimer);
         attempt = 0;
         setSyncStatus(isPatient ? 'Esperando al terapeuta' : 'Sala activa · esperando al paciente');
-        pingTimer = window.setInterval(() => send({ type: 'ping', clientSent: Date.now() }), 5000);
+        lastHeardAt = Date.now();
+        pingTimer = window.setInterval(() => {
+          // Vigilante: una red caída no siempre cierra el WebSocket; sin respuesta en 12 s se da por perdida.
+          if (Date.now() - lastHeardAt > 12000) {
+            onDropped(1006);
+            try {
+              ws.close();
+            } catch {
+              /* ya cerrada */
+            }
+            return;
+          }
+          send({ type: 'ping', clientSent: Date.now() });
+          // Resincroniza la presencia por si se perdió algún aviso.
+          send({ type: 'presence' });
+        }, 4000);
         send({ type: 'ping', clientSent: Date.now() });
         if (!isPatient) {
           // Al (re)conectar, el profesional publica su configuración actual.
           send({ type: 'settings', settings: settingsRef.current });
+          if (isPlayingRef.current) send({ type: 'start' });
         }
       };
 
       ws.onmessage = (event) => {
+        lastHeardAt = Date.now();
         try {
           handleMessage(JSON.parse(event.data as string));
         } catch {
@@ -178,25 +248,7 @@ export function useRealtimeSync({
         }
       };
 
-      ws.onclose = (event) => {
-        window.clearInterval(pingTimer);
-        if (socketRef.current === ws) socketRef.current = null;
-        setPeerConnected(false);
-        if (disposed) return;
-        if (event.code === 4009) {
-          setSyncStatus('Sesión abierta en otra pestaña o dispositivo');
-          return;
-        }
-        if (FATAL_CLOSE_CODES.has(event.code) || attempt >= RECONNECT_DELAYS.length) {
-          setSyncStatus(
-            isPatient
-              ? 'No se pudo entrar a la sala. Pide un enlace nuevo al terapeuta.'
-              : 'Sala no disponible. Crea una sala nueva.'
-          );
-          return;
-        }
-        retryTimer = window.setTimeout(open, RECONNECT_DELAYS[attempt++]);
-      };
+      ws.onclose = (event) => onDropped(event.code);
     };
 
     open();

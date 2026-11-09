@@ -49,3 +49,16 @@ PR #1 fusionado (`32b3e6f`); Cloudflare build `2293ce3c-3451-48cb-ae1b-fbd1ab8ef
 - Interfaz: la cabecera muestra «Sin sala» antes de crearla; «Crear Sala Segura» genera el enlace con credencial; abierto en otra pestaña, el profesional ve «Paciente Conectado», el paciente «Conectado con el terapeuta» y la credencial desaparece de la barra; «Iniciar» del profesional pone al paciente en «Estimulando».
 
 Límites: ambas pestañas en el mismo equipo y navegador; no se probó con dos dispositivos ni redes distintas, ni latencia, audio o validez clínica.
+
+## 2026-11-09 · Revisión integral: pausa, vista del paciente y cortes de red
+
+Condiciones: Wrangler 4.158.0 local, Chrome headless (Playwright 1.63.0) con dos contextos aislados; corte de red del paciente simulado interceptando su WebSocket (los mensajes dejan de llegar sin cerrar la conexión, y los intentos nuevos no alcanzan el servidor). Una ejecución por escenario; sin datos de pacientes.
+
+- Pausa: la figura vuelve al centro con desaceleración en ~0,8 s en ambas vistas (p. ej. terapeuta 3→20→31→39→45→48→49→50 %, muestreo cada 100 ms).
+- Paciente que entra con la estimulación ya en curso: se incorpora en movimiento (antes quedaba detenido porque el servidor rechazaba iniciar sin paciente).
+- Vista del paciente: sin barra inferior, sin indicador superior ni botón DETENER.
+- Corte silencioso de la red del paciente: tras ~13 s la figura vuelve suave al centro y aparece «Sesión en pausa» (antes seguía moviéndose sola); el terapeuta pasa a ver «Invitar Paciente» en ≤20 s (antes seguía viendo «Paciente Conectado»). Al volver la red, reconexión automática y el aviso se retira solo.
+- Modo solo visual: el informe cuenta ciclos (45 en la prueba).
+- `scripts/smoke.mjs` 12/12; `wrangler deploy --dry-run` aprobado.
+
+Límites: no se probaron dispositivos ni redes reales, latencia, audio ni validez clínica. Los plazos (12 s cliente, 15 s servidor) son criterios de diseño, no mediciones.
