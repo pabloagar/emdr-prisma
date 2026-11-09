@@ -1,6 +1,6 @@
 # EMDR Prisma · Plataforma de Estimulación Bilateral (React + TypeScript)
 
-Plataforma interactiva clínica de estimulación bilateral EMDR reescrita en React 19 y TypeScript sobre Vite y Express con soporte de sincronización remota en tiempo real mediante WebSocket y BroadcastChannel.
+Plataforma interactiva clínica de estimulación bilateral EMDR reescrita en React 19 y TypeScript sobre Vite, servida por un Worker de Cloudflare con un Durable Object por sala para la sincronización remota en tiempo real (WebSocket).
 
 ## Características Principales
 
@@ -15,24 +15,35 @@ Plataforma interactiva clínica de estimulación bilateral EMDR reescrita en Rea
 - **Sincronización Remota Profesional-Paciente**:
   - Vista Profesional con controles completos de sesión, cronómetro, reportes e informe clínico.
   - Vista Paciente inmersiva (`?role=patient`) con controles de seguridad simplificados, botón de activación de sonido y parada de emergencia instantánea.
-  - Conexión WebSocket a `/api/rooms/:roomId/ws` y soporte complementario para pruebas multipestaña con `BroadcastChannel`.
+  - Salas efímeras (2 h) creadas en el servidor: `POST /api/rooms` entrega una credencial para el profesional y otra para el paciente; ambas se guardan solo como hash.
+  - Enlace del paciente: `/?role=patient#room=<id>&patient=<token>` (la credencial va en el fragmento y se borra de la barra al cargar).
+  - Conexión WebSocket a `/api/rooms/:roomId/ws`; reconexión automática y pausa si se pierde al profesional.
 - **Informe Clínico de Sesión**: Conteo de pasadas bilaterales, tiempo de estimulación y registro de notas/SUDs guardados al historial.
 
 ## Tecnologías
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS, Vite.
-- **Backend**: Node.js, Express, `ws` (WebSocket Server).
+- **Backend**: Cloudflare Workers + Durable Objects (`src/worker.ts`, `wrangler.jsonc`).
 - **Audio**: WebAudio API con StereoPannerNode y osciladores sintéticos.
 
 ## Ejecución
 
 ```bash
-# Modo de desarrollo (dev server en puerto 3000)
+npm install
+
+# App completa local (compila y levanta el Worker con salas en http://127.0.0.1:8791)
+npm run preview
+
+# Desarrollo de interfaz con recarga en caliente (http://localhost:3000).
+# Requiere `npm run preview` en otra terminal y copiar .dev.vars.example a .dev.vars.
 npm run dev
 
-# Compilar frontend
-npm run build
+# Comprobaciones
+npm run check                       # tipos
+npm run smoke                       # protocolo de salas contra :8791 (o pasar una URL)
 
-# Iniciar servidor en producción
-npm start
+# Despliegue (compila automáticamente antes de subir)
+npm run deploy
 ```
+
+Prototipo técnico de demostración, sin validación clínica. Cualquiera con acceso a la web puede crear salas; no introducir datos de pacientes reales.

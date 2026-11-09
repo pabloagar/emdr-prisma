@@ -1,0 +1,2 @@
+# Copiar a .dev.vars para desarrollo local con "npm run dev" (Vite en :3000 + Worker en :8791)
+DEV_LOCAL_ORIGIN=true

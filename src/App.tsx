@@ -25,27 +25,12 @@ import { RemoteRoomModal } from './components/RemoteRoomModal';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
 
 export const App: React.FC = () => {
-  // Detección de rol y sala desde query params o fragment
-  const [role, setRole] = useState<Role>('therapist');
-  const [roomId, setRoomId] = useState<string>('EMDR-2368');
-
-  useEffect(() => {
+  // Detección de rol desde la URL (la sala y su credencial las lee useRealtimeSync)
+  const [role] = useState<Role>(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const rawRole = (urlParams.get('role') || urlParams.get('mode') || '').toLowerCase();
-    const isPat = rawRole === 'patient';
-    setRole(isPat ? 'patient' : 'therapist');
-
-    const paramRoom = urlParams.get('room');
-    if (paramRoom) {
-      setRoomId(paramRoom);
-    } else {
-      const fragment = new URLSearchParams(window.location.hash.slice(1));
-      const hashRoom = fragment.get('room');
-      if (hashRoom) {
-        setRoomId(hashRoom);
-      }
-    }
-  }, []);
+    return rawRole === 'patient' ? 'patient' : 'therapist';
+  });
 
   const isPatient = role === 'patient';
 
@@ -190,6 +175,7 @@ export const App: React.FC = () => {
     peerConnected,
     latencyMs,
     credentials,
+    patientLink,
     createRoom,
     reconnect,
     sendStart,
@@ -198,17 +184,15 @@ export const App: React.FC = () => {
     isCreating
   } = useRealtimeSync({
     role,
-    roomId,
-    onRoomIdChange: (newId) => setRoomId(newId),
     settings,
-    isPlaying,
     onApplyRemoteSettings: handleApplyRemoteSettings,
     onRemoteStart: handleRemoteStart,
     onRemotePause: handleRemotePause,
     onRemoteStop: handleRemoteStop
   });
 
-  const activeRoomId = credentials?.roomId || roomId;
+  // Código corto para mostrar en la cabecera (el identificador real es un UUID).
+  const roomLabel = credentials?.roomId ? credentials.roomId.slice(0, 8).toUpperCase() : 'Sin sala';
 
   // Toggle Iniciar / Pausa suave y gestión de bloques técnicos
   const handlePlayToggle = () => {
@@ -397,16 +381,18 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaying, isStoppingSmoothly, settings.level]);
 
-  // Copiar enlace paciente
-  const handleCopyPatientLink = async () => {
-    const url = `${window.location.origin}${window.location.pathname}?role=patient&room=${encodeURIComponent(
-      activeRoomId
-    )}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      window.prompt('Copia este enlace para el paciente:', url);
+  // Copiar enlace paciente. Sin sala creada, abre el panel para crearla.
+  const handleCopyPatientLink = async (): Promise<boolean> => {
+    if (!patientLink) {
+      setIsRemoteModalOpen(true);
+      return false;
     }
+    try {
+      await navigator.clipboard.writeText(patientLink);
+    } catch {
+      window.prompt('Copia este enlace para el paciente:', patientLink);
+    }
+    return true;
   };
 
   // Cálculo del reporte técnico en tiempo real
@@ -480,7 +466,7 @@ export const App: React.FC = () => {
       {/* Cabecera clínica con botón de sala llamativo y copiar directo */}
       {!isPatient && (
         <TherapistHeader
-          roomId={activeRoomId}
+          roomId={roomLabel}
           timerFormatted={formatTimer(timerSeconds)}
           onResetTimer={handleResetTimer}
           syncStatus={syncStatus}
@@ -592,6 +578,7 @@ export const App: React.FC = () => {
         isOpen={isRemoteModalOpen}
         onClose={() => setIsRemoteModalOpen(false)}
         credentials={credentials}
+        patientLink={patientLink}
         onCreateRoom={createRoom}
         onReconnect={reconnect}
         syncStatus={syncStatus}

@@ -11,7 +11,7 @@ interface TherapistHeaderProps {
   isSidebarOpen: boolean;
   onOpenReport: () => void;
   onOpenRemoteModal: () => void;
-  onCopyPatientLink: () => Promise<void>;
+  onCopyPatientLink: () => Promise<boolean>;
 }
 
 export const TherapistHeader: React.FC<TherapistHeaderProps> = ({
@@ -31,7 +31,8 @@ export const TherapistHeader: React.FC<TherapistHeaderProps> = ({
 
   const handleQuickCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await onCopyPatientLink();
+    const copied = await onCopyPatientLink();
+    if (!copied) return;
     setShowTooltip(true);
     setTimeout(() => setShowTooltip(false), 2400);
   };
