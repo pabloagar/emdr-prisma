@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "emdr-prisma",
+  "workers_dev": true,
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-30",
+  // Compila la app React antes de cada despliegue, así Cloudflare nunca sirve un dist/ viejo.
+  "build": { "command": "npm run build" },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "SessionRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SessionRoom"] }]
+}

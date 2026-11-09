@@ -4,27 +4,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "vite",
     "build": "vite build",
-    "start": "NODE_ENV=production tsx server.ts"
+    "preview": "npm run build && wrangler dev --port 8791",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit -p .",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261109.1",
     "@tailwindcss/vite": "^4.3.4",
-    "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^6.2.1",
     "tailwindcss": "^4.3.4",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "wrangler": "^4.158.0"
   },
   "dependencies": {
-    "express": "^5.3.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "ws": "^8.22.1"
+    "react-dom": "^19.3.1"
   }
 }

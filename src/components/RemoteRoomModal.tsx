@@ -5,12 +5,13 @@ interface RemoteRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
   credentials: RemoteCredentials | null;
+  patientLink: string | null;
   onCreateRoom: () => Promise<void>;
   onReconnect: () => void;
   syncStatus: string;
   peerConnected: boolean;
   latencyMs: number | null;
-  onCopyPatientLink: () => Promise<void>;
+  onCopyPatientLink: () => Promise<boolean>;
   isCreating: boolean;
 }
 
@@ -18,6 +19,7 @@ export const RemoteRoomModal: React.FC<RemoteRoomModalProps> = ({
   isOpen,
   onClose,
   credentials,
+  patientLink,
   onCreateRoom,
   onReconnect,
   syncStatus,
@@ -31,16 +33,12 @@ export const RemoteRoomModal: React.FC<RemoteRoomModalProps> = ({
   if (!isOpen) return null;
 
   const handleCopy = async () => {
-    await onCopyPatientLink();
+    if (!(await onCopyPatientLink())) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const patientUrl = credentials?.roomId
-    ? `${window.location.origin}${window.location.pathname}?role=patient&room=${encodeURIComponent(
-        credentials.roomId
-      )}`
-    : null;
+  const patientUrl = patientLink;
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 select-none">
@@ -106,7 +104,7 @@ export const RemoteRoomModal: React.FC<RemoteRoomModalProps> = ({
                 </button>
               </div>
               <p className="text-[11px] text-[#5B6960] leading-relaxed">
-                Sala activa: <strong className="text-[#17231D] font-mono">{credentials.roomId}</strong>.
+                Sala activa: <strong className="text-[#17231D] font-mono">{credentials.roomId.slice(0, 8).toUpperCase()}</strong>. El enlace incluye la llave de acceso del paciente y caduca en 2 horas.
                 Comparte este enlace únicamente a través de un canal clínico seguro.
               </p>
             </div>
@@ -124,7 +122,7 @@ export const RemoteRoomModal: React.FC<RemoteRoomModalProps> = ({
               className="flex-1 py-2.5 px-4 bg-[#1B3B2B] hover:bg-[#2A5B44] text-white rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[17px]">add_circle</span>
-              <span>{isCreating ? 'Creando sala...' : 'Crear Sala Segura'}</span>
+              <span>{isCreating ? 'Creando sala...' : credentials ? 'Crear Sala Nueva' : 'Crear Sala Segura'}</span>
             </button>
             <button
               onClick={onReconnect}
