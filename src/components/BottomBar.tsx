@@ -346,7 +346,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
           <button
             type="button"
             onClick={onToggleModality}
-            title={isAudioOnly ? 'Cambiar a Visual + Audio' : 'Cambiar a Solo Auditivo'}
+            title={isAudioOnly ? 'Cambiar a Solo Visual' : 'Cambiar a Solo Auditivo'}
             className={`h-9 p-1.5 rounded-xl border flex items-center gap-1 px-2.5 transition-all cursor-pointer shrink-0 ${
               isAudioOnly
                 ? 'bg-[#1B3B2B] text-white border-[#1B3B2B] shadow-2xs font-semibold'
@@ -357,7 +357,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
               {isAudioOnly ? 'headphones' : 'visibility'}
             </span>
             <span className="text-[11px] font-medium hidden md:inline">
-              {isAudioOnly ? 'Solo Auditivo' : 'Visual'}
+              {isAudioOnly ? 'Solo Auditivo' : modality === 'both' ? 'Visual + Audio' : 'Solo Visual'}
             </span>
           </button>
         )}

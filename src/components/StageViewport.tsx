@@ -170,19 +170,20 @@ export const StageViewport: React.FC<StageViewportProps> = ({
       currentPosRef.current = nextPos;
       setCurrentPos(nextPos);
 
-      // Detección L/R y Audio estéreo (suena tanto en modo visual como en solo-auditivo)
-      if (!isStoppingSmoothly && s.modality !== 'visual-only') {
+      // Detección L/R: cuenta pasadas en todas las modalidades; el audio no suena en «solo visual».
+      if (!isStoppingSmoothly) {
+        const withSound = s.modality !== 'visual-only';
         if (lat <= -thr && lastSideRef.current !== 'left') {
           lastSideRef.current = 'left';
           onPassIncrementRef.current();
           setActiveSide('L');
-          audioEngine.playSound('L', s.soundType, s.soundActive);
+          if (withSound) audioEngine.playSound('L', s.soundType, s.soundActive);
           setTimeout(() => setActiveSide(null), 120);
         } else if (lat >= thr && lastSideRef.current !== 'right') {
           lastSideRef.current = 'right';
           onPassIncrementRef.current();
           setActiveSide('R');
-          audioEngine.playSound('R', s.soundType, s.soundActive);
+          if (withSound) audioEngine.playSound('R', s.soundType, s.soundActive);
           setTimeout(() => setActiveSide(null), 120);
         }
       }

@@ -6,7 +6,6 @@ interface TherapistHeaderProps {
   onResetTimer: () => void;
   syncStatus: string;
   peerConnected: boolean;
-  onOpenTemplates: () => void;
   onToggleSidebar: () => void;
   isSidebarOpen: boolean;
   onOpenReport: () => void;
@@ -20,7 +19,6 @@ export const TherapistHeader: React.FC<TherapistHeaderProps> = ({
   onResetTimer,
   syncStatus,
   peerConnected,
-  onOpenTemplates,
   onToggleSidebar,
   isSidebarOpen,
   onOpenReport,
@@ -121,16 +119,6 @@ export const TherapistHeader: React.FC<TherapistHeaderProps> = ({
 
       {/* Zona Derecha: Herramientas Clínicas */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Plantillas */}
-        <button
-          onClick={onOpenTemplates}
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold font-display border border-[#DCE3DC] bg-white hover:bg-[#EFF2EE] text-[#17231D] transition-all cursor-pointer shadow-2xs"
-          title="Ver y cargar plantillas clínicas"
-        >
-          <span className="material-symbols-outlined text-[16px] text-[#1B3B2B]">bookmarks</span>
-          <span className="hidden md:inline">Plantillas</span>
-        </button>
-
         {/* Ajustes */}
         <button
           onClick={onToggleSidebar}

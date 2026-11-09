@@ -349,12 +349,12 @@ export const App: React.FC = () => {
       bg: tpl.bg,
       stimulus: tpl.stimulus,
       stimulusColor: tpl.stimulusColor || null,
-      modality: tpl.modality || 'both',
+      modality: tpl.modality || 'visual-only',
       dotSize: tpl.dotSize,
       trajectory: tpl.trajectory,
       level: tpl.level,
       frequency: frequencyFromLevel(tpl.level),
-      amplitude: tpl.amplitude || 0.85,
+      amplitude: tpl.amplitude || 0.94,
       soundActive: tpl.soundActive,
       soundType: tpl.soundType
     }));
@@ -471,10 +471,6 @@ export const App: React.FC = () => {
           onResetTimer={handleResetTimer}
           syncStatus={syncStatus}
           peerConnected={peerConnected}
-          onOpenTemplates={() => {
-            setSidebarTab('templates');
-            setIsSidebarOpen(true);
-          }}
           onToggleSidebar={() => {
             setSidebarTab('stimuli');
             setIsSidebarOpen((prev) => !prev);
@@ -521,7 +517,8 @@ export const App: React.FC = () => {
             modality={settings.modality}
             onToggleModality={() =>
               handleUpdateSettings({
-                modality: settings.modality === 'audio-only' ? 'both' : 'audio-only',
+                // El botón alterna solo visual ↔ solo auditivo; «visual + audio» se elige en Ajustes.
+                modality: settings.modality === 'audio-only' ? 'visual-only' : 'audio-only',
                 soundActive: true
               })
             }
