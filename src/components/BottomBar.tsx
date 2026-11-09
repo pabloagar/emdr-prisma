@@ -90,7 +90,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
   };
 
   const stepSizePlus = () => {
-    onDotSizeChange(Math.min(56, dotSize + 4));
+    onDotSizeChange(Math.min(120, dotSize + 4));
   };
 
   let playButtonLabel = 'Iniciar';
@@ -236,7 +236,7 @@ export const BottomBar: React.FC<BottomBarProps> = ({
               <input
                 type="range"
                 min={16}
-                max={52}
+                max={120}
                 value={dotSize}
                 onChange={(e) => onDotSizeChange(parseInt(e.target.value, 10))}
                 className="w-full h-2 bg-[#EFF2EE] rounded-lg accent-[#1B3B2B] cursor-pointer"

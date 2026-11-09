@@ -317,8 +317,8 @@ export const StageViewport: React.FC<StageViewportProps> = ({
         if (!isAudioUnlocked) onAudioUnlock();
       }}
     >
-      {/* Micro-barra superior del lienzo (solo visible para terapeuta o si no es solo-auditivo) */}
-      {(!isPatient || !isAudioOnly) && (
+      {/* Micro-barra superior del lienzo (estado y L/R): solo para el profesional */}
+      {!isPatient && (
         <div className="absolute top-0 inset-x-0 h-10 px-4 flex items-center justify-between text-xs z-20 pointer-events-none select-none">
           <div className="flex items-center gap-2 pointer-events-auto">
             {/* Indicador de estado discreto */}

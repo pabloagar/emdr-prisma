@@ -552,15 +552,6 @@ export const App: React.FC = () => {
       {/* Controles del Paciente (solo en modo paciente) */}
       {isPatient && (
         <PatientControls
-          syncStatus={syncStatus}
-          peerConnected={peerConnected}
-          isAudioUnlocked={isAudioUnlocked}
-          onEnableAudio={handleAudioUnlock}
-          onEmergencyStop={() => {
-            setIsPlaying(false);
-            setIsStoppingSmoothly(false);
-            sendStop('patient');
-          }}
           showDisconnectedOverlay={showDisconnectedOverlay}
           onDismissOverlay={() => setShowDisconnectedOverlay(false)}
         />

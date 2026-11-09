@@ -507,7 +507,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                   <input
                     type="range"
                     min={16}
-                    max={52}
+                    max={120}
                     value={settings.dotSize}
                     onChange={(e) => onUpdateSettings({ dotSize: parseInt(e.target.value, 10) })}
                     className="w-full h-1.5 bg-[#EFF2EE] rounded-lg accent-[#1B3B2B] cursor-pointer"
