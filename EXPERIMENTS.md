@@ -41,3 +41,11 @@ Resultados (una ejecución cada uno):
 - Navegador: crear sala → copiar enlace → abrir en otro contexto: profesional ve «Paciente Conectado», paciente «Conectado con el terapeuta»; tras recargar el paciente sigue conectado; Espacio en el profesional pone a ambos en «Estimulando»; DETENER del paciente devuelve a ambos a «En reposo». Sin errores de JavaScript.
 
 No se midió latencia, percepción de audio, sincronía audiovisual ni validez clínica. No verificado aún en producción ni con dos dispositivos reales.
+
+### Verificación en producción (2026-11-09)
+
+PR #1 fusionado (`32b3e6f`); Cloudflare build `2293ce3c-3451-48cb-ae1b-fbd1ab8efea0` aprobado, versión `1c27b479-c022-46da-8b02-83e33e181627`. Navegador integrado de la app de escritorio (Chromium, versión exacta: null), una ejecución:
+- Desde la página pública: `/api/health` 200 con JSON del Worker; `POST /api/rooms` 201; token falso rechazado; ambos roles conectados por WebSocket; inicio llega al paciente y la parada del paciente llega al terapeuta.
+- Interfaz: la cabecera muestra «Sin sala» antes de crearla; «Crear Sala Segura» genera el enlace con credencial; abierto en otra pestaña, el profesional ve «Paciente Conectado», el paciente «Conectado con el terapeuta» y la credencial desaparece de la barra; «Iniciar» del profesional pone al paciente en «Estimulando».
+
+Límites: ambas pestañas en el mismo equipo y navegador; no se probó con dos dispositivos ni redes distintas, ni latencia, audio o validez clínica.
