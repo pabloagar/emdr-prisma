@@ -1,39 +1,21 @@
-import { SessionSettings } from './types';
+import { SessionSettings, StimulusShape, TrajectoryType } from './types';
 
-export const allowedTrajectories = [
+// Deben coincidir con TrajectoryType y StimulusShape (src/types.ts).
+export const allowedTrajectories: TrajectoryType[] = [
   'horizontal',
   'vertical',
   'diagonal',
-  'infinity',
-  'circle',
-  'circular',
-  'ellipse',
-  'figure-eight',
-  'pendulum',
   'alternate',
-  'random',
-  'spiral',
+  'infinity',
+  'circular',
+  'pendulum',
   'arc',
   'zigzag',
   'bounce',
   'smooth-random'
 ];
 
-export const allowedStimuli = [
-  'circle',
-  'soft',
-  'ring',
-  'drop',
-  'heart',
-  'diamond',
-  'star',
-  'butterfly',
-  'square',
-  'sweep',
-  'laser',
-  'led-bar',
-  'edges'
-];
+export const allowedStimuli: StimulusShape[] = ['circle', 'drop', 'heart', 'diamond', 'star', 'led-bar', 'sweep', 'edges'];
 
 export const allowedSounds = ['heartbeat', 'tibetan', 'water', 'click', 'wood', 'soft', 'tone', 'silence'];
 export const hexRegex = /^#[0-9a-fA-F]{6}$/;
@@ -60,15 +42,14 @@ export function cleanSettings(value: Record<string, unknown>): Partial<SessionSe
   if (value.trajectory !== undefined) {
     if (
       typeof value.trajectory !== 'string' ||
-      value.trajectory.length > 40 ||
-      !/^[a-z0-9-]+$/.test(value.trajectory)
+      !(allowedTrajectories as string[]).includes(value.trajectory)
     ) {
       throw new Error('Trayectoria inválida');
     }
     out.trajectory = value.trajectory;
   }
   if (value.stimulus !== undefined) {
-    if (typeof value.stimulus !== 'string' || !allowedStimuli.includes(value.stimulus)) {
+    if (typeof value.stimulus !== 'string' || !(allowedStimuli as string[]).includes(value.stimulus)) {
       throw new Error('Estímulo inválido');
     }
     out.stimulus = value.stimulus;

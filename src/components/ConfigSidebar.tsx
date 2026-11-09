@@ -859,11 +859,12 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               {Object.values(PRESET_TEMPLATES).map((tpl) => {
                 const isActive = activeTemplateId === tpl.id;
                 const pal = PALETTES[tpl.palette] || PALETTES.salvia;
+                // Sin modalidad definida, la plantilla se carga como «solo visual» (ver applyTemplate en App).
                 const modLabel = tpl.modality === 'audio-only'
                   ? 'Auditivo'
-                  : tpl.modality === 'visual-only'
-                  ? 'Visual'
-                  : 'Ambos';
+                  : tpl.modality === 'both'
+                  ? 'Ambos'
+                  : 'Visual';
                 const soundLabel = tpl.soundType === 'heartbeat'
                   ? 'Latido'
                   : tpl.soundType === 'tibetan'

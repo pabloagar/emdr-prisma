@@ -14,6 +14,7 @@ import {
   PRESET_TEMPLATES,
   frequencyFromLevel
 } from './constants';
+import { allowedStimuli, allowedTrajectories } from './validation';
 import { audioEngine } from './audio';
 import { TherapistHeader } from './components/TherapistHeader';
 import { StageViewport } from './components/StageViewport';
@@ -361,11 +362,12 @@ export const App: React.FC = () => {
       ...prev,
       palette: tpl.palette,
       bg: tpl.bg,
-      stimulus: tpl.stimulus,
+      // Plantillas antiguas pueden traer estímulos/trayectorias retirados.
+      stimulus: (allowedStimuli as string[]).includes(tpl.stimulus) ? tpl.stimulus : 'circle',
       stimulusColor: tpl.stimulusColor || null,
       modality: tpl.modality || 'visual-only',
       dotSize: tpl.dotSize,
-      trajectory: tpl.trajectory,
+      trajectory: (allowedTrajectories as string[]).includes(tpl.trajectory) ? tpl.trajectory : 'horizontal',
       level: tpl.level,
       frequency: frequencyFromLevel(tpl.level),
       amplitude: tpl.amplitude || 0.94,

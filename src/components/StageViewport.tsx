@@ -27,7 +27,6 @@ export const StageViewport: React.FC<StageViewportProps> = ({
   isAudioUnlocked
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [activeSide, setActiveSide] = useState<'L' | 'R' | null>(null);
   const [currentPos, setCurrentPos] = useState({ fx: 0.5, fy: 0.5, nx: 0, ny: 0, lat: 0 });
@@ -145,7 +144,7 @@ export const StageViewport: React.FC<StageViewportProps> = ({
           ny = 0;
           lat = nx;
           thr = 0.5;
-        } else if (['sweep', 'laser', 'led-bar'].includes(s.stimulus)) {
+        } else if (['sweep', 'led-bar'].includes(s.stimulus)) {
           const normPhase = ((cycle / (2 * Math.PI)) % 1 + 1) % 1;
           const tri = normPhase < 0.5 ? normPhase * 4 - 1 : 3 - normPhase * 4;
           nx = tri * entranceEase;
@@ -200,57 +199,6 @@ export const StageViewport: React.FC<StageViewportProps> = ({
       }
     };
   }, [isPlaying, isStoppingSmoothly]);
-
-  // Dibujar Canvas Láser (solo si modalidad no es audio-only)
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const W = canvas.clientWidth;
-    const H = canvas.clientHeight;
-    if (!W || !H) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-    }
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-
-    if (settings.modality !== 'audio-only' && settings.stimulus === 'laser') {
-      const ox = W * 0.5;
-      const oy = H * 0.04;
-      const tx = currentPos.fx * W;
-      const ty = currentPos.fy * H;
-      const col = stimulusColor;
-
-      ctx.save();
-      ctx.strokeStyle = col;
-      ctx.globalAlpha = 0.25;
-      ctx.lineWidth = Math.max(3, settings.dotSize * 0.35);
-      ctx.beginPath();
-      ctx.moveTo(ox, oy);
-      ctx.lineTo(tx, ty);
-      ctx.stroke();
-
-      ctx.globalAlpha = 0.95;
-      ctx.lineWidth = Math.max(1.5, settings.dotSize * 0.12);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.beginPath();
-      ctx.moveTo(ox, oy);
-      ctx.lineTo(tx, ty);
-      ctx.stroke();
-
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      ctx.arc(tx, ty, Math.max(5, settings.dotSize * 0.22), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }, [currentPos, settings.stimulus, settings.dotSize, settings.modality, stimulusColor]);
 
   const isAudioOnly = settings.modality === 'audio-only';
   const isExperimental = ['led-bar', 'sweep', 'edges'].includes(settings.stimulus);
